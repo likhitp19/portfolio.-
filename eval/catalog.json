@@ -1,0 +1,97 @@
+{
+  "openf1_coverage_from_year": 2023,
+  "dimensions": ["routing", "orchestration", "transformation", "answer_quality", "api_cleanliness"],
+  "cases": [
+    {
+      "id": 1,
+      "title": "Driver salary vs ROI",
+      "query": "Which driver delivered the highest financial ROI in the 2023 season based on estimated salary versus championship points scored?",
+      "year": 2023,
+      "expected_intent": "driver_roi",
+      "expected_route": "data_analyst",
+      "required_tools": ["get_championship_drivers", "get_finance_estimates"],
+      "forbidden_tools": ["search_commercial", "get_laps", "get_race_control"],
+      "metric": "salary_usd / championship_points",
+      "implemented": true
+    },
+    {
+      "id": 2,
+      "title": "Constructor budget efficiency",
+      "query": "Compare the capital efficiency and cost-per-point between McLaren and Ferrari under the cost cap in 2023.",
+      "year": 2023,
+      "expected_intent": "constructor_finance",
+      "expected_route": "data_analyst",
+      "required_tools": ["get_championship_teams", "get_finance_estimates"],
+      "forbidden_tools": ["search_commercial", "get_laps"],
+      "metric": "budget_cap_usd / constructor_points",
+      "compare": ["McLaren", "Ferrari"],
+      "implemented": true
+    },
+    {
+      "id": 3,
+      "title": "Midfield investor pitch",
+      "query": "If an investor wanted to back the most cost-efficient midfield team from 2023 for future upside, who would the data suggest and why?",
+      "year": 2023,
+      "expected_intent": "constructor_finance",
+      "expected_route": "data_analyst",
+      "required_tools": ["get_championship_teams", "get_finance_estimates"],
+      "forbidden_tools": ["get_laps"],
+      "implemented": "partial"
+    },
+    {
+      "id": 4,
+      "title": "Teammate head-to-head",
+      "query": "Compare Charles Leclerc and Carlos Sainz across the 2023 season. What was their qualifying delta and race finish ratio?",
+      "year": 2023,
+      "expected_intent": "teammate_h2h",
+      "expected_route": "data_analyst",
+      "required_tools": [],
+      "forbidden_tools": ["get_laps", "search_commercial"],
+      "implemented": false
+    },
+    {
+      "id": 5,
+      "title": "Bahrain stint strategy",
+      "query": "At the 2023 Bahrain Grand Prix, how did the tyre compound strategies of the top 3 finishers impact their final stint pace?",
+      "year": 2023,
+      "expected_intent": "stint_strategy",
+      "expected_route": "data_analyst",
+      "required_tools": [],
+      "forbidden_tools": ["get_laps", "search_commercial"],
+      "implemented": false
+    },
+    {
+      "id": 6,
+      "title": "Monza net positions",
+      "query": "Who gained the most net positions from their starting grid spot across the 2023 Monza Grand Prix?",
+      "year": 2023,
+      "expected_intent": "position_gain",
+      "expected_route": "data_analyst",
+      "required_tools": [],
+      "forbidden_tools": ["get_laps", "search_commercial"],
+      "implemented": false
+    },
+    {
+      "id": 7,
+      "title": "Budget cap regulations (no APIs)",
+      "query": "Explain how the F1 budget cap regulations work and how penalties are enforced.",
+      "year": null,
+      "expected_intent": "regulatory_knowledge",
+      "expected_route": "generalist_direct",
+      "required_tools": [],
+      "forbidden_tools": ["list_meetings", "list_sessions", "get_laps", "get_championship_teams", "get_finance_estimates", "search_commercial"],
+      "implemented": true
+    },
+    {
+      "id": 8,
+      "title": "1998 Monaco telemetry boundary",
+      "query": "Show me the fastest lap telemetry from the 1998 Monaco Grand Prix.",
+      "year": 1998,
+      "expected_intent": "historical_out_of_coverage",
+      "expected_route": "generalist_direct",
+      "required_tools": [],
+      "forbidden_tools": ["get_laps", "list_meetings", "list_sessions"],
+      "implemented": true
+    }
+  ]
+}
