@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     openf1_password: str = ""
     openf1_access_token: str = ""
     cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
+    cors_origin_regex: str = r"https://.*\.vercel\.app"
     deepseek_api_key: str = ""
     openai_api_key: str = ""
     llm_base_url: str = "https://api.deepseek.com"

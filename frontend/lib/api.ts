@@ -34,7 +34,7 @@ export function formatApiError(error: unknown): { code?: string; message: string
 
 function apiBase(): string {
   if (typeof window === "undefined") {
-    return process.env.API_INTERNAL_URL ?? "http://127.0.0.1:8000";
+    return (process.env.API_INTERNAL_URL ?? "http://127.0.0.1:8000").replace(/\/$/, "");
   }
   return (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
 }

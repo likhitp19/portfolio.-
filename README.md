@@ -14,7 +14,7 @@ This is **not** a live timing app and **not** a chronological race-control timel
 | [EVALUATION.md](./EVALUATION.md) | Eight-test agent rubric: routing, orchestration, transformation, answer quality, API cleanliness |
 | [DEPLOY.md](./DEPLOY.md) | Vercel UI + Railway API, env vars, CORS, smoke checks |
 
-**Documentation for this commercial pivot is the source of truth.** Implementation follows the plan only after each phase is approved. Existing code is a sporting prototype; phases below **replace** that product surface.
+**Production:** Vercel (UI) + Railway (API). The browser calls Railway directly (`NEXT_PUBLIC_API_URL`). See [DEPLOY.md](./DEPLOY.md). Paste secrets in the host dashboards — no keys in git.
 
 ---
 
@@ -51,7 +51,7 @@ Next.js **is** the React site. **Production:** Vercel (UI) + Railway (API). See 
 
 | Layer | Choice | Why |
 | --- | --- | --- |
-| Frontend | **Next.js** App Router | URL-as-state for season/circuit; RSC fetch of `/api/dashboard` |
+| Frontend | **Next.js** App Router | Season/circuit in the URL; dashboard loads from the browser against FastAPI |
 | UI | **Tailwind** + **Shadcn** (`Card`, `Badge`, `Tabs`, `HoverCard`, `Table`, `Alert`) | Premium dark console; FIFA-style cards; hover for valuation footnotes |
 | Charts | **Recharts** | Cost-per-point bars; top-5 points progression; custom tooltips (USD + pts) |
 | Backend | **FastAPI** | Dashboard aggregate (no LLM) + `POST /api/chat` |
@@ -121,9 +121,10 @@ Backend tests: `cd backend && source .venv/bin/activate && pytest -q`.
 | `LLM_BASE_URL` | backend | Default `https://api.deepseek.com` |
 | `LLM_MODEL` | backend | Default `deepseek-v4-flash` (or `deepseek-v4-pro`) |
 | `OPENAI_API_KEY` | backend | Fallback if `DEEPSEEK_API_KEY` is unset (same OpenAI SDK shape) |
-| `CORS_ORIGINS` | backend | `http://localhost:3000,http://127.0.0.1:3000` |
-| `API_INTERNAL_URL` | frontend (server) | FastAPI origin for RSC / rewrites |
-| `NEXT_PUBLIC_API_URL` | frontend (browser) | Railway HTTPS origin in production so chat is not limited by Vercel rewrite time |
+| `CORS_ORIGINS` | backend | Explicit origins, e.g. Vercel production URL |
+| `CORS_ORIGIN_REGEX` | backend | Default `https://.*\.vercel\.app` |
+| `API_INTERNAL_URL` | frontend | FastAPI origin for leftover same-origin rewrites |
+| `NEXT_PUBLIC_API_URL` | frontend (browser) | **Required on Vercel.** Railway HTTPS origin, no trailing slash |
 
 ---
 

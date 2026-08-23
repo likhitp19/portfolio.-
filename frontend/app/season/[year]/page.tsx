@@ -1,5 +1,4 @@
-import { DashboardView } from "@/components/dashboard/DashboardView";
-import { formatApiError, loadDashboard } from "@/lib/api";
+import { DashboardLoader } from "@/components/dashboard/DashboardLoader";
 
 type PageProps = {
   params: Promise<{ year: string }>;
@@ -7,11 +6,5 @@ type PageProps = {
 
 export default async function SeasonPage({ params }: PageProps) {
   const { year: raw } = await params;
-  const year = Number(raw);
-  try {
-    const data = await loadDashboard(year);
-    return <DashboardView data={data} />;
-  } catch (error) {
-    return <DashboardView error={formatApiError(error)} />;
-  }
+  return <DashboardLoader year={Number(raw)} />;
 }

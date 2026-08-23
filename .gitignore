@@ -28,6 +28,10 @@ backend/data/*.sqlite-journal
 backend/.env
 frontend/.env.local
 
+# Hosting
+.vercel
+.railway
+
 # OS / IDE
 .DS_Store
 .idea/

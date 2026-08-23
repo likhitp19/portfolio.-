@@ -7,9 +7,11 @@ import type { DashboardPayload } from "@/lib/types";
 export function DashboardView({
   data,
   error,
+  showChat = true,
 }: {
   data?: DashboardPayload;
   error?: { code?: string; message: string };
+  showChat?: boolean;
 }) {
   if (error || !data) {
     const code = error?.code;
@@ -59,7 +61,7 @@ export function DashboardView({
         driverProgression={data.progression}
         constructorProgression={data.constructor_progression}
       />
-      <ChatPanel year={data.year} meetingKey={data.meetingKey} />
+      {showChat ? <ChatPanel year={data.year} meetingKey={data.meetingKey} /> : null}
     </>
   );
 }
