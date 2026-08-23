@@ -1,12 +1,4 @@
 {
   "framework": "nextjs",
-  "regions": ["iad1"],
-  "redirects": [
-    {
-      "source": "/",
-      "destination": "/season/2025",
-      "permanent": false
-    }
-  ]
+  "regions": ["iad1"]
 }
-
