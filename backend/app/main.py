@@ -8,6 +8,7 @@ from app.integrations.openf1 import OpenF1Client
 from app.routers.chat import router as chat_router
 from app.routers.dashboard import router as dashboard_router
 from app.runtime import get_client, set_client, set_fact_store
+from app.services.dashboard import dashboard_overview
 from app.services.fact_store import FactStore
 
 
@@ -21,6 +22,22 @@ async def lifespan(app: FastAPI):
         set_client(client)
         owned = True
     set_fact_store(FactStore())
+    if settings.dashboard_preload:
+        import asyncio
+
+        async def _preload() -> None:
+            await asyncio.sleep(0.5)
+            try:
+                live = get_client()
+            except RuntimeError:
+                return
+            for year in (2024, 2025):
+                try:
+                    await dashboard_overview(live, year, None)
+                except Exception:
+                    continue
+
+        asyncio.create_task(_preload())
     yield
     if owned:
         await client.aclose()
@@ -43,4 +60,7 @@ app.include_router(chat_router)
 
 @app.get("/health")
 def health() -> dict:
-    return {"status": "ok"}
+    from app.runtime import get_fact_store
+
+    store = get_fact_store()
+    return {"status": "ok", "facts_backend": getattr(store, "backend", getattr(store, "backend_name", "sqlite")), "facts_count": store.count()}

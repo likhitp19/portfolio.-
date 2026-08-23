@@ -25,10 +25,11 @@ The UI does **not** load OpenF1 on the Vercel server. Nav, dashboard, and chat a
 | `CORS_ORIGIN_REGEX` | Default `https://.*\.vercel\.app` covers previews. Keep it. |
 | `DEEPSEEK_API_KEY` | Chat routing; heuristics still work if empty |
 | `TAVILY_API_KEY` | Only for “look up online” |
+| `SUPABASE_URL` / `SUPABASE_ANON_KEY` | Durable commercial facts. Create `commercial_facts` with `backend/app/data/commercial_facts.sql` first. |
 | `LLM_BASE_URL` / `LLM_MODEL` | Defaults in `backend/.env.example` |
 | `PORT` | Railway sets this. Do not override. |
 
-SQLite lives at `/tmp/commercial_facts.sqlite` in the image (seed on boot). It is **not** durable across deploys; that is fine for the interview.
+If Supabase is configured and the table exists, facts persist across deploys. Otherwise SQLite at `/tmp/commercial_facts.sqlite` is seeded on boot (ephemeral).
 
 ---
 
@@ -68,4 +69,7 @@ Two Railway services from one repo:
 1. Open the Vercel URL → season dashboard fills in (may take ~15–45s).
 2. Chip **Ferrari vs McLaren CPP (2023)** → finance answer + source tag.
 3. Chip **1998 Telemetry Boundary Test** → empty `api_calls`.
-4. `GET /health` on Railway → `{"status":"ok"}`.
+4. `GET /health` on Railway → `status: ok`. After Supabase is wired, `facts_backend` is `supabase` and `facts_count` is ~40+.
+5. Manufacturer tab shows valuations for **all ten** constructors (not only the top four).
+
+Supabase one-time SQL and seed behavior: [FACTS.md](./FACTS.md).

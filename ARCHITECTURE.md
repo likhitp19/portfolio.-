@@ -79,7 +79,7 @@ OpenF1 does **not** expose team valuations, driver retainers, or sponsor rates. 
 
 **Why persist:** a 2024 McLaren valuation or a 2023 cap figure barely moves. Re-searching on every `/api/dashboard` is slow, expensive, and more likely to pick up a bad snippet. Historical rows (`season_year` already complete) are **frozen**: updates require an explicit `--force` refresh, not an automatic overwrite.
 
-**Store location:** SQLite `backend/data/commercial_facts.sqlite` (gitignored runtime) plus optional export `backend/data/commercial_facts.seed.json` that **can be committed** once reviewed so demos stay accurate offline.
+**Store location:** SQLite `backend/data/commercial_facts.sqlite` (gitignored runtime) plus committed seed `backend/app/data/commercial_facts.seed.json`. With `SUPABASE_URL` and `SUPABASE_ANON_KEY` and table `public.commercial_facts`, the API hydrates from and writes to Supabase so Railway deploys keep valuations. DDL: `backend/app/data/commercial_facts.sql`. Operator guide: [FACTS.md](./FACTS.md).
 
 **Row schema (logical):**
 

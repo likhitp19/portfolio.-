@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 import asyncio
+import time
 
 from fastapi import HTTPException
 
@@ -29,6 +30,12 @@ TOP_DRIVERS = 5
 OPENF1_DETAIL_RACE_CAP = 4
 
 _season_result_cache: Dict[int, List[Dict[str, Any]]] = {}
+_dashboard_cache: Dict[tuple, Tuple[float, DashboardOverview]] = {}
+_DASHBOARD_TTL_SECONDS = 900.0
+
+
+def clear_dashboard_cache() -> None:
+    _dashboard_cache.clear()
 
 
 def last_season_years() -> List[int]:
@@ -667,6 +674,10 @@ async def _constructor_progression_series(
 ) -> List[ProgressionSeries]:
     if not session_keys or not circuits:
         return []
+    if len(session_keys) > OPENF1_DETAIL_RACE_CAP:
+        from_ergast = _constructor_series_from_ergast(await _season_results(year), circuits)
+        if from_ergast:
+            return from_ergast
     try:
         bulk = await client.get_championship_teams(year=year)
     except OpenF1HTTPError:
@@ -766,6 +777,21 @@ def _manufacturer_story(constructors: List[ConstructorStanding]) -> Tuple[Option
 
 
 async def dashboard_overview(
+    client: OpenF1Client,
+    year: int,
+    meeting_key: Optional[int] = None,
+) -> DashboardOverview:
+    cache_key = (year, meeting_key)
+    now = time.monotonic()
+    cached = _dashboard_cache.get(cache_key)
+    if cached and now - cached[0] < _DASHBOARD_TTL_SECONDS:
+        return cached[1]
+    overview = await _build_dashboard_overview(client, year, meeting_key)
+    _dashboard_cache[cache_key] = (now, overview)
+    return overview
+
+
+async def _build_dashboard_overview(
     client: OpenF1Client,
     year: int,
     meeting_key: Optional[int] = None,

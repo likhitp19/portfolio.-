@@ -1,4 +1,5 @@
 from app.runtime import get_search_client
+from app.services.commercial import lookup_valuation
 from app.services.fact_store import FactStore
 from fastapi.testclient import TestClient
 
@@ -57,3 +58,12 @@ def test_frozen_year_not_overwritten_without_force() -> None:
     assert store.get("constructor", "mclaren", 2024, "valuation_usd")["value_usd"] == 1
     assert store.upsert(second, force=True) is True
     assert store.get("constructor", "mclaren", 2024, "valuation_usd")["value_usd"] == 99
+
+
+def test_midfield_constructors_have_seeded_valuations() -> None:
+    store = FactStore(":memory:")
+    for team in ("alpine", "haas", "williams", "aston martin", "rb", "sauber"):
+        row = lookup_valuation(store, team, 2025)
+        assert row is not None
+        assert row.get("value_usd")
+        assert row.get("status") != "defaulted"

@@ -13,6 +13,7 @@ This is **not** a live timing app and **not** a chronological race-control timel
 | [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) | Five Git-tracked phases (setup → manufacturer finance → driver gamification → LangGraph → chat + trace) |
 | [EVALUATION.md](./EVALUATION.md) | Eight-test agent rubric: routing, orchestration, transformation, answer quality, API cleanliness |
 | [DEPLOY.md](./DEPLOY.md) | Vercel UI + Railway API, env vars, CORS, smoke checks |
+| [FACTS.md](./FACTS.md) | Supabase/SQLite commercial store, seed SQL, dashboard cache |
 
 **Production:** Vercel (UI) + Railway (API). The browser calls Railway directly (`NEXT_PUBLIC_API_URL`). See [DEPLOY.md](./DEPLOY.md). Paste secrets in the host dashboards — no keys in git.
 
@@ -39,7 +40,7 @@ This is **not** a live timing app and **not** a chronological race-control timel
 
 - **≥10 seasons** in the year dropdown (rolling window, e.g. 2017–2026).
 - **Sporting:** OpenF1 for 2023+ completed races; **Jolpica/Ergast** when OpenF1 has no meeting list (older years). Never live timing. **`F1_LIVE_LOCK`** if OpenF1 is locked during a session.
-- **Commercial:** search once → **Supabase** (SQLite if keys are missing). Frozen for completed years.
+- **Commercial:** search once → **fact store** (Supabase when configured, else SQLite). Frozen for completed years. See [FACTS.md](./FACTS.md).
 
 ### Ship
 
@@ -56,7 +57,7 @@ Next.js **is** the React site. **Production:** Vercel (UI) + Railway (API). See 
 | Charts | **Recharts** | Cost-per-point bars; top-5 points progression; custom tooltips (USD + pts) |
 | Backend | **FastAPI** | Dashboard aggregate (no LLM) + `POST /api/chat` |
 | Sporting data | **OpenF1 v1** | Meetings, sessions, championship, results, laps — completed sessions only |
-| Commercial facts | **Search API** (Tavily, pluggable) + **SQLite/JSON fact store** | Valuations, cap headlines, salaries — cited, cached, historical years frozen |
+| Commercial facts | **Search API** (Tavily, pluggable) + **SQLite and optional Supabase** | Valuations, cap headlines, salaries — cited, cached, historical years frozen |
 | Agents | **LangGraph** | Role-separated: Generalist (route), Data Analyst (tools), Technical Manager (trace only) |
 
 ```
@@ -115,7 +116,8 @@ Backend tests: `cd backend && source .venv/bin/activate && pytest -q`.
 | `OPENF1_USERNAME` / `OPENF1_PASSWORD` | backend | Optional. Not required for historical use. |
 | `OPENF1_ACCESS_TOKEN` | backend | Optional Bearer. |
 | `TAVILY_API_KEY` | backend | Commercial search (Phase 2). Not used on dashboard GET. |
-| `SUPABASE_URL` / `SUPABASE_ANON_KEY` | backend | Fact store. Optional until you send keys; SQLite fallback. |
+| `SUPABASE_URL` / `SUPABASE_ANON_KEY` | backend | Durable facts. Run `backend/app/data/commercial_facts.sql` once, then restart API. |
+| `DASHBOARD_PRELOAD` | backend | Default true. Warms 2024/2025 dashboard cache on boot. |
 | `JOLPICA_BASE_URL` | backend | Default `https://api.jolpi.ca/ergast/f1` for pre-OpenF1 seasons. |
 | `DEEPSEEK_API_KEY` | backend | Optional. [DeepSeek API](https://api-docs.deepseek.com/). Heuristics work if empty. |
 | `LLM_BASE_URL` | backend | Default `https://api.deepseek.com` |

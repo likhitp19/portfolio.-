@@ -63,7 +63,7 @@ function parseApiError(status: number, raw: string): ApiError {
 async function getJson<T>(path: string): Promise<T> {
   const response = await fetch(`${apiBase()}${path}`, {
     cache: "no-store",
-    signal: AbortSignal.timeout(45000),
+    signal: AbortSignal.timeout(90000),
   });
   if (!response.ok) {
     throw parseApiError(response.status, await response.text());
@@ -150,7 +150,7 @@ export async function sendChat(body: ChatRequest): Promise<ChatResponse> {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
-    signal: AbortSignal.timeout(45000),
+    signal: AbortSignal.timeout(90000),
   });
   const json = (await response.json().catch(() => null)) as ChatResponse | null;
   if (!response.ok) {

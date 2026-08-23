@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     supabase_url: str = ""
     supabase_anon_key: str = ""
     commercial_facts_db: str = "data/commercial_facts.sqlite"
+    dashboard_preload: bool = True
     jolpica_base_url: str = "https://api.jolpi.ca/ergast/f1"
     season_window_years: int = 10
 

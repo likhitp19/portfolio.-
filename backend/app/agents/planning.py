@@ -569,6 +569,11 @@ def _synthesize(
                 }
             )
             lines = []
+            lines.append(
+                "Metric: cost_per_point = cost_cap_usd / constructor_championship_points. "
+                "Inputs: Jolpica/OpenF1 constructor points + stored cap (default USD 135M). "
+                "Lower USD/pt is more efficient."
+            )
             if len(named) >= 2:
                 a, b = named[0], named[1]
                 winner = a if a[0] <= b[0] else b
