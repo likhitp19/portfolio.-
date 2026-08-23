@@ -128,6 +128,17 @@ def test_dashboard_overview_endpoint() -> None:
     assert len(body["progression"]["series"]) == 5
 
 
+def test_constructor_progression_uses_team_points_not_drivers() -> None:
+    body = client.get("/api/dashboard?year=2024").json()
+    series = body["constructor_progression"]["series"]
+    names = {item["driver"] for item in series}
+    assert "Max Verstappen" not in names
+    assert "Lando Norris" not in names
+    assert "McLaren" in names
+    mclaren = next(item for item in series if item["driver"] == "McLaren")
+    assert mclaren["points"] == [30, 66]
+
+
 def test_dashboard_live_lock_error_code(fake_openf1: FakeOpenF1Client) -> None:
     fake_openf1.fail_resource = "list_meetings"
     fake_openf1.fail_status = 401

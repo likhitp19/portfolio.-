@@ -161,8 +161,14 @@ class FakeOpenF1Client:
         if session_key is not None:
             return list(self.teams_by_session.get(int(session_key), []))
         if params.get("year") is not None:
-            latest = max(self.teams_by_session.keys())
-            return list(self.teams_by_session.get(latest, []))
+            rows: List[Dict[str, Any]] = []
+            for key, items in self.teams_by_session.items():
+                for item in items:
+                    row = dict(item)
+                    row["session_key"] = key
+                    row["year"] = int(params["year"])
+                    rows.append(row)
+            return rows
         return []
 
     async def get_session_result(self, **params: Any) -> List[Dict[str, Any]]:

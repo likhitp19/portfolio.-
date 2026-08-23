@@ -21,7 +21,7 @@ export function CostPerPointChart({ rows }: { rows: ConstructorStanding[] }) {
   return (
     <Card className="mt-4">
       <CardHeader>
-        <CardTitle className="text-base">Cost per championship point</CardTitle>
+        <CardTitle className="text-base">Constructor cost per championship point</CardTitle>
       </CardHeader>
       <CardContent className="h-72">
         <ResponsiveContainer width="100%" height="100%">

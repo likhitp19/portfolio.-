@@ -1,5 +1,6 @@
 import { CitationHover } from "@/components/dashboard/CitationHover";
 import { CostPerPointChart } from "@/components/dashboard/CostPerPointChart";
+import { ManufacturerPointsChart } from "@/components/dashboard/ManufacturerPointsChart";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatUsd } from "@/lib/formatMoney";
@@ -55,6 +56,7 @@ export function ManufacturerStandings({ rows }: { rows: ConstructorStanding[] })
           ))}
         </TableBody>
       </Table>
+      <ManufacturerPointsChart rows={rows} />
       <CostPerPointChart rows={rows} />
     </div>
   );

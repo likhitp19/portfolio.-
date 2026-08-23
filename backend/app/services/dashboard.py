@@ -605,6 +605,7 @@ async def _progression_pair(
         names, teams = await _driver_directory(client, _as_int(last_race.get("session_key")))
     circuits: List[CircuitLabel] = []
     snapshots: List[List[DriverStanding]] = []
+    race_session_keys: List[int] = []
     for meeting in meetings:
         race = race_by_meeting.get(meeting.meeting_key)
         if not race:
@@ -623,6 +624,7 @@ async def _progression_pair(
             )
         )
         snapshots.append(_to_driver_standings(rows, names, teams))
+        race_session_keys.append(session_key)
     if not snapshots:
         empty = StandingsProgression()
         return empty, empty
@@ -638,20 +640,99 @@ async def _progression_pair(
                 running = found.points
             points_over_time.append(running)
         series.append(ProgressionSeries(driver=driver.full_name, points=points_over_time))
-    constructor_series: List[ProgressionSeries] = []
-    latest_teams: Dict[str, float] = {}
-    for driver in snapshots[-1]:
-        latest_teams[driver.team_name] = latest_teams.get(driver.team_name, 0.0) + driver.points
-    top_teams = sorted(latest_teams.items(), key=lambda item: -item[1])[:TOP_DRIVERS]
-    for team_name, _pts in top_teams:
-        points_over_time = [
-            sum(d.points for d in snapshot if d.team_name == team_name) for snapshot in snapshots
-        ]
-        constructor_series.append(ProgressionSeries(driver=team_name, points=points_over_time))
+    constructor_series = await _constructor_progression_series(
+        client, year, race_session_keys, circuits
+    )
     return (
         StandingsProgression(circuits=circuits, series=series),
         StandingsProgression(circuits=circuits, series=constructor_series),
     )
+
+
+def _team_points_map(rows: List[Dict[str, Any]]) -> Dict[str, float]:
+    points: Dict[str, float] = {}
+    for row in rows:
+        name = str(row.get("team_name") or "").strip()
+        if not name:
+            continue
+        points[name] = _as_float(row.get("points_current", row.get("points")))
+    return points
+
+
+async def _constructor_progression_series(
+    client: OpenF1Client,
+    year: int,
+    session_keys: List[int],
+    circuits: List[CircuitLabel],
+) -> List[ProgressionSeries]:
+    if not session_keys or not circuits:
+        return []
+    try:
+        bulk = await client.get_championship_teams(year=year)
+    except OpenF1HTTPError:
+        bulk = []
+    by_session: Dict[int, List[Dict[str, Any]]] = {}
+    for row in bulk:
+        session_key = _as_int(row.get("session_key"))
+        if session_key:
+            by_session.setdefault(session_key, []).append(row)
+    snapshots: List[Dict[str, float]] = []
+    for session_key in session_keys:
+        rows = by_session.get(session_key)
+        if not rows and session_key:
+            try:
+                rows = await client.get_championship_teams(session_key=session_key)
+            except OpenF1HTTPError:
+                rows = []
+        snapshots.append(_team_points_map(rows or []))
+    while len(snapshots) < len(circuits):
+        snapshots.append(snapshots[-1] if snapshots else {})
+    snapshots = snapshots[: len(circuits)]
+    if not any(snapshots):
+        return _constructor_series_from_ergast(await _season_results(year), circuits)
+    latest = snapshots[-1]
+    top_teams = sorted(latest.items(), key=lambda item: -item[1])[:TOP_DRIVERS]
+    series: List[ProgressionSeries] = []
+    for team_name, _pts in top_teams:
+        running = 0.0
+        points_over_time: List[float] = []
+        for snapshot in snapshots:
+            if team_name in snapshot:
+                running = snapshot[team_name]
+            points_over_time.append(running)
+        series.append(ProgressionSeries(driver=team_name, points=points_over_time))
+    return series
+
+
+def _constructor_series_from_ergast(
+    races: List[Dict[str, Any]],
+    circuits: List[CircuitLabel],
+) -> List[ProgressionSeries]:
+    running: Dict[str, float] = {}
+    snapshots: List[Dict[str, float]] = []
+    for race in races:
+        for result in race.get("Results") or []:
+            constructor = str((result.get("Constructor") or {}).get("name") or "").strip()
+            if not constructor:
+                continue
+            running[constructor] = running.get(constructor, 0.0) + _as_float(result.get("points"))
+        snapshots.append(dict(running))
+    if not snapshots:
+        return []
+    while len(snapshots) < len(circuits):
+        snapshots.append(snapshots[-1])
+    snapshots = snapshots[: len(circuits)]
+    latest = snapshots[-1]
+    top_teams = sorted(latest.items(), key=lambda item: -item[1])[:TOP_DRIVERS]
+    series: List[ProgressionSeries] = []
+    for team_name, _pts in top_teams:
+        series.append(
+            ProgressionSeries(
+                driver=team_name,
+                points=[snapshot.get(team_name, 0.0) for snapshot in snapshots],
+            )
+        )
+    return series
 
 
 async def standings_progression(client: OpenF1Client, year: int) -> StandingsProgression:

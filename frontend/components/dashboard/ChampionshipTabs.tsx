@@ -38,9 +38,9 @@ export function ChampionshipTabs({
           <TabsContent value="manufacturer" className="space-y-4">
             <ManufacturerStandings rows={constructors} />
             <PointsProgressionChart
-              data={constructorProgression ?? { circuits: [], series: [] }}
-              title="Constructor points across the season"
-              subtitle="Team championship points after each completed grand prix — not driver scores."
+              data={constructorProgression?.series?.length ? constructorProgression : { circuits: [], series: [] }}
+              title="Constructor championship over the season"
+              subtitle="FIA constructor (manufacturer) points after each GP. Driver scores stay on the Driver tab."
             />
           </TabsContent>
           <TabsContent value="driver" className="space-y-4">
