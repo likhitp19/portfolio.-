@@ -82,3 +82,15 @@ python -c "from app.services.fact_store import FactStore; s=FactStore(); print(s
 ```
 
 Expect `supabase` and a count around 40+ after the first successful attach. Then `GET http://127.0.0.1:8000/health` (`facts_backend`, `facts_count`).
+
+---
+
+## Driver photos and team logos
+
+Driver cards load F1 CDN headshots from `frontend/lib/media.ts`. If the CDN 404s, initials stay. Manufacturer names show team logos (2025 → 2024 → 2023 slug fallback).
+
+---
+
+## Railway (after this repo is on `main`)
+
+Set the same `SUPABASE_URL` and `SUPABASE_ANON_KEY` as local `.env` in the Railway service variables, then redeploy. This environment cannot log into your Railway account.

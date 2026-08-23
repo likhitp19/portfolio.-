@@ -1,7 +1,9 @@
 import { CitationHover } from "@/components/dashboard/CitationHover";
+import { MediaAvatar } from "@/components/dashboard/MediaAvatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatUsd } from "@/lib/formatMoney";
+import { driverHeadshotUrl } from "@/lib/media";
 import type { DriverStanding } from "@/lib/types";
 
 function initials(name: string): string {
@@ -31,9 +33,11 @@ export function DriverCard({ row }: { row: DriverStanding }) {
     <Card className="overflow-hidden border-border bg-gradient-to-b from-card to-background">
       <CardContent className="pt-4">
         <div className="flex items-start justify-between gap-3">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full border border-border bg-secondary text-sm font-bold tracking-wide">
-            {initials(row.full_name)}
-          </div>
+          <MediaAvatar
+            src={driverHeadshotUrl(row.full_name)}
+            alt={row.full_name}
+            fallback={initials(row.full_name)}
+          />
           <Badge>P{row.position}</Badge>
         </div>
         <p className="mt-3 text-lg font-semibold leading-tight">{row.full_name}</p>

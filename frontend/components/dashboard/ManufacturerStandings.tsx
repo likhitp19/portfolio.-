@@ -1,9 +1,11 @@
 import { CitationHover } from "@/components/dashboard/CitationHover";
 import { CostPerPointChart } from "@/components/dashboard/CostPerPointChart";
 import { ManufacturerPointsChart } from "@/components/dashboard/ManufacturerPointsChart";
+import { TeamLogo } from "@/components/dashboard/MediaAvatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatUsd } from "@/lib/formatMoney";
+import { constructorLogoFallbacks } from "@/lib/media";
 import type { ConstructorStanding } from "@/lib/types";
 
 export function ManufacturerStandings({ rows }: { rows: ConstructorStanding[] }) {
@@ -42,7 +44,12 @@ export function ManufacturerStandings({ rows }: { rows: ConstructorStanding[] })
           {rows.map((row) => (
             <TableRow key={row.team_name}>
               <TableCell>{row.position}</TableCell>
-              <TableCell className="font-medium">{row.team_name}</TableCell>
+              <TableCell className="font-medium">
+                <span className="inline-flex items-center gap-2">
+                  <TeamLogo urls={constructorLogoFallbacks(row.team_name)} alt={row.team_name} />
+                  {row.team_name}
+                </span>
+              </TableCell>
               <TableCell className="text-right tabular-nums">{row.points}</TableCell>
               <TableCell className="text-right">
                 <span className="mr-2 tabular-nums">{formatUsd(row.valuation_usd)}</span>
