@@ -36,8 +36,8 @@ export function ManufacturerStandings({ rows }: { rows: ConstructorStanding[] })
             <TableHead className="text-right">Valuation</TableHead>
             <TableHead className="text-right">Cap</TableHead>
             <TableHead className="text-right">USD / pt</TableHead>
-            <TableHead className="text-right">Wins</TableHead>
-            <TableHead className="text-right">Avg wins</TableHead>
+            <TableHead className="text-right">Race wins</TableHead>
+            <TableHead className="text-right">Wins / GP</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

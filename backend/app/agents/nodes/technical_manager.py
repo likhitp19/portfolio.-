@@ -1,6 +1,7 @@
 from typing import Any, Dict, List
 
 from app.agents.state import F1DashboardState
+from app.agents.tools import SANDBOX_NOTICE
 
 TRACE_KEYS = ("routing", "reasoning_path", "api_calls", "pipelines")
 
@@ -129,6 +130,15 @@ def technical_manager_node(state: F1DashboardState) -> dict:
         )
 
     notes = list(state.get("analysis_notes") or [])
+    if any(call.get("sandbox_fallback") or SANDBOX_NOTICE in str(call.get("error") or "") for call in tool_calls):
+        notes = [{"phase": "notice", "detail": SANDBOX_NOTICE}] + notes
+        reasoning_path.append(
+            {
+                "step": len(reasoning_path) + 1,
+                "actor": "technical_manager",
+                "summary": SANDBOX_NOTICE,
+            }
+        )
     if not notes:
         for call in tool_calls:
             notes.append(
@@ -145,6 +155,24 @@ def technical_manager_node(state: F1DashboardState) -> dict:
         if state.get("answer"):
             notes.append({"phase": "result", "detail": str(state.get("answer"))[:280]})
 
+    finance_cards = []
+    for note in notes:
+        detail = str(note.get("detail") or note.get("detail") or "")
+        if "Formula:" in detail:
+            finance_cards.append(
+                {
+                    "formula": detail.split("Formula:", 1)[-1].strip(),
+                    "phase": note.get("phase") or "calculate",
+                }
+            )
+            reasoning_path.append(
+                {
+                    "step": len(reasoning_path) + 1,
+                    "actor": "technical_manager",
+                    "summary": "Formula: {0}".format(detail.split("Formula:", 1)[-1].strip()),
+                }
+            )
+
     trace: Dict[str, Any] = {
         "routing": {
             "intent": state.get("intent") or "unknown",
@@ -157,6 +185,7 @@ def technical_manager_node(state: F1DashboardState) -> dict:
         "execution_trace": notes,
         "missing_inputs": list(state.get("missing_inputs") or []),
         "assumptions": list(state.get("assumptions") or []),
+        "finance_cards": finance_cards,
     }
     updates: Dict[str, Any] = {"trace": trace}
     if not (state.get("answer") or "").strip():

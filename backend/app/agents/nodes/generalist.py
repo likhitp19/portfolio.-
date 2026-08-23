@@ -6,6 +6,10 @@ from app.agents.state import F1DashboardState
 
 def generalist_node(state: F1DashboardState) -> Dict[str, Any]:
     heuristic = heuristic_generalist(state)
+    # Never let the LLM answer quantitative F1 from weights — skip it for specialist routes.
+    if heuristic.get("route") in {"data_analyst", "researcher"}:
+        heuristic["season_year"] = _year(state)
+        return heuristic
     llm = maybe_llm_generalist(state)
     if not llm:
         heuristic["season_year"] = _year(state)

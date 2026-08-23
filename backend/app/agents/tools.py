@@ -1,9 +1,17 @@
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
+import httpx
+
+from app.data.mock_financial import mock_facts_for_year
 from app.integrations.openf1 import OpenF1HTTPError
+from app.integrations.search import SearchUnavailable
 from app.runtime import get_client, get_fact_store, get_search_client
 from app.services.commercial import refresh_commercial_facts
+
+SANDBOX_NOTICE = (
+    "[Notice: Sandbox restricted external search; resolved via internal benchmark store]"
+)
 
 TOOL_CATALOG = {
     "list_meetings": {"method": "GET", "path": "/v1/meetings"},
@@ -21,6 +29,20 @@ TOOL_CATALOG = {
 }
 
 PREVIEW_LIMIT = 40
+FINANCE_PREVIEW_LIMIT = 120
+
+
+def _merge_mock_finance(year: int, data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    existing = {
+        (str(row.get("entity_type")), str(row.get("entity_key")), str(row.get("metric")))
+        for row in data
+    }
+    extra = []
+    for row in mock_facts_for_year(year):
+        key = (str(row["entity_type"]), str(row["entity_key"]), str(row["metric"]))
+        if key not in existing:
+            extra.append(row)
+    return list(data) + extra
 
 
 def _compact_rows(name: str, rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -92,6 +114,7 @@ async def execute_tool(name: str, args: Optional[Dict[str, Any]] = None) -> Dict
         fallback = False
         if year:
             data, used_year, fallback = store.list_year_with_fallback(int(year))
+            data = _merge_mock_finance(int(used_year or year), list(data))
         else:
             data = []
         params = dict(args)
@@ -106,7 +129,7 @@ async def execute_tool(name: str, args: Optional[Dict[str, Any]] = None) -> Dict
             "status": "ok",
             "error": None,
             "record_count": len(data),
-            "preview": data[:PREVIEW_LIMIT],
+            "preview": data[:FINANCE_PREVIEW_LIMIT],
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "fact_year": used_year,
             "fact_year_fallback": fallback,
@@ -115,22 +138,41 @@ async def execute_tool(name: str, args: Optional[Dict[str, Any]] = None) -> Dict
         search = get_search_client()
         query = str(args.get("query") or "")
         year = int(args.get("year") or datetime.now(timezone.utc).year)
-        hits = await search.search(query) if query else []
         teams = list(args.get("team_names") or [])
-        refresh = await refresh_commercial_facts(get_fact_store(), search, year, teams, force=False)
-        preview = hits[:PREVIEW_LIMIT] or [refresh]
-        return {
-            "tool": name,
-            "args": args,
-            "method": meta["method"],
-            "path": meta["path"],
-            "params": args,
-            "status": "ok",
-            "error": None,
-            "record_count": len(hits) or int(refresh.get("searched") or 0),
-            "preview": preview,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        }
+        try:
+            hits = await search.search(query) if query else []
+            refresh = await refresh_commercial_facts(get_fact_store(), search, year, teams, force=False)
+            preview = hits[:PREVIEW_LIMIT] or [refresh]
+            return {
+                "tool": name,
+                "args": args,
+                "method": meta["method"],
+                "path": meta["path"],
+                "params": args,
+                "status": "ok",
+                "error": None,
+                "record_count": len(hits) or int(refresh.get("searched") or 0),
+                "preview": preview,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "sandbox_fallback": False,
+            }
+        except (SearchUnavailable, httpx.TimeoutException, httpx.ProxyError, OSError):
+            store = get_fact_store()
+            data, used_year, fallback = store.list_year_with_fallback(year)
+            data = _merge_mock_finance(int(used_year or year), list(data))
+            return {
+                "tool": name,
+                "args": args,
+                "method": meta["method"],
+                "path": meta["path"],
+                "params": {**args, "fact_year": used_year, "sandbox_fallback": True},
+                "status": "degraded",
+                "error": SANDBOX_NOTICE,
+                "record_count": len(data),
+                "preview": data[:FINANCE_PREVIEW_LIMIT],
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "sandbox_fallback": True,
+            }
     client = get_client()
     method = getattr(client, name, None)
     if method is None:

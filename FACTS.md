@@ -60,7 +60,7 @@ A cold full-season dashboard used to hammer OpenF1 for constructor charts and so
 | Preload | `DASHBOARD_PRELOAD=true` warms 2024 and 2025 after boot |
 | Browser | `AbortSignal` **90s** so a cold Railway start can finish |
 
-First request after a cold start can still take tens of seconds. The next ones should hit cache.
+Constructor **race wins** on the Manufacturer tab are season totals from Jolpica constructor standings (`wins`) and paginated race results. A single `/results.json` page is only ~30 classification rows (about one GP); we page until `total`. Sprint sessions are not counted. **Wins / GP** uses completed grands prix, not every OpenF1 session labeled Race.
 
 ---
 

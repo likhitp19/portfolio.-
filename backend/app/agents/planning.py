@@ -95,6 +95,9 @@ def classify_intent(state: F1DashboardState) -> str:
     )
     if any(phrase in text for phrase in regulatory) or ("regulation" in text and "enforc" in text):
         return "regulatory_knowledge"
+    if re.search(r"what(?:'s| is) (?:the )?(?:f1 |fia )?(?:budget|cost) cap", text):
+        if "point" not in text and "mclaren" not in text and "per " not in text:
+            return "regulatory_knowledge"
     if "explain how" in text and "cap" in text and "mclaren" not in text and "cost-per-point" not in text:
         return "regulatory_knowledge"
     research_words = ("search online", "look up", "lookup", "find online", "google", "web search")
@@ -123,6 +126,9 @@ def classify_intent(state: F1DashboardState) -> str:
         "budget cap",
         "cost per constructor",
         "cpp",
+        "efficien",
+        "rankings",
+        "season ranking",
     )
     if any(word in text for word in finance_words):
         return "constructor_finance"
@@ -135,13 +141,17 @@ def classify_intent(state: F1DashboardState) -> str:
         "retainer",
         "salary per",
         "points scored",
+        "salary/point",
+        "per point",
     )
     if any(word in text for word in roi_words):
         return "driver_roi"
     if any(word in text for word in ("dnf", "dns", "dsq", "operational", "ops risk", "reliability")):
         return "meeting_insights"
-    if any(word in text for word in ("lap", "pace", "telemetry")):
+    if any(word in text for word in ("lap", "pace", "telemetry", "lap time", "lap times")):
         return "telemetry_compare"
+    if any(word in text for word in ("driver compare", "driver comparison", "championship points", "how many points")):
+        return "comparative_standings"
     if state.get("meeting_key") or "grand prix" in text:
         return "meeting_insights"
     if "circuit" in text and "all circuit" not in text:
@@ -555,13 +565,15 @@ def _synthesize(
             }
         )
         if show:
+            best = show[0]
             notes.append(
                 {
                     "phase": "calculate",
-                    "detail": "cost_per_point = cap / constructor_points. Lower is more efficient.",
+                    "detail": "Formula: Cap ${0:,.0f} / Points {1:.0f} = ${2:,.0f}/pt ({3})".format(
+                        cap, best[2], best[0], best[1]
+                    ),
                 }
             )
-            best = show[0]
             notes.append(
                 {
                     "phase": "result",
@@ -677,6 +689,14 @@ def _synthesize(
             )
             lines = ["Top financial efficiency (salary per championship point) in {0}:".format(_year(state) or "")]
             for fer, name, salary, points in ranked[:5]:
+                notes.append(
+                    {
+                        "phase": "calculate",
+                        "detail": "Formula: Salary ${0:,.0f} / Points {1:.0f} = FER ${2:,.0f} ({3})".format(
+                            salary, points, fer, name
+                        ),
+                    }
+                )
                 lines.append("{0}: ${1:,.0f}/pt on ${2:,.0f} salary and {3:.0f} pts.".format(name, fer, salary, points))
             lines.append("Retainers are stored estimates with citations, not audited payroll.")
             if assumptions:
@@ -782,6 +802,26 @@ def _synthesize(
     )
 
 
+GENERALIST_SYSTEM_PROMPT = """You are the F1 Generalist router for a commercial BI console.
+You do not answer quantitative questions from memory.
+
+MUST set route=data_analyst (never generalist_direct, never invent numbers) when the query
+asks for any of: points, lap times, telemetry, driver comparisons, season rankings,
+efficiency, ROI, salary/point, cost-per-point, valuations joined to results, or any math.
+
+ONLY set route=generalist_direct for:
+- greetings / what-can-you-do
+- pure FIA regulatory explainers with no team metric (example: how the budget cap is enforced)
+- out-of-coverage history (pre-2023 telemetry)
+
+Use route=researcher only when the user explicitly asks to search/look up online.
+
+Reply JSON keys: intent, route, routing_rationale, answer.
+answer must be empty unless route is generalist_direct.
+Never invent salaries, points, or ratios.
+"""
+
+
 def maybe_llm_generalist(state: F1DashboardState) -> Optional[Dict[str, Any]]:
     if not settings.llm_api_key:
         return None
@@ -796,15 +836,11 @@ def maybe_llm_generalist(state: F1DashboardState) -> Optional[Dict[str, Any]]:
             temperature=0,
         )
         prompt = (
-            "Classify the F1 dashboard user query. Reply as JSON with keys "
-            "intent, route (data_analyst, researcher, or generalist_direct), routing_rationale, answer. "
-            "Use generalist_direct only for greetings. Use researcher for look-up / search-online requests. "
-            "Never invent dollar figures. "
             "Context year={0} meeting_key={1}. Query: {2}"
         ).format(state.get("season_year"), state.get("meeting_key"), _query(state))
         msg = model.invoke(
             [
-                SystemMessage(content="You are the F1 Generalist router. Never invent standings. No tools."),
+                SystemMessage(content=GENERALIST_SYSTEM_PROMPT),
                 HumanMessage(content=prompt),
             ]
         )

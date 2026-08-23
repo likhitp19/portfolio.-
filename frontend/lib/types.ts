@@ -89,6 +89,7 @@ export type AgentTrace = {
   execution_trace?: Array<Record<string, unknown>>;
   missing_inputs?: string[];
   assumptions?: string[];
+  finance_cards?: Array<{ formula?: string; phase?: string }>;
 };
 
 export type ChatRequest = {

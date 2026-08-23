@@ -4,54 +4,22 @@ export type InsightChip = {
   prompt: string;
 };
 
-export function insightChips(year: number, meetingKey?: number): InsightChip[] {
-  const circuit = meetingKey != null ? "this circuit" : `${year} (all circuits)`;
+export function insightChips(_year: number, _meetingKey?: number): InsightChip[] {
   return [
     {
-      id: "demo-cpp",
-      label: "Ferrari vs McLaren CPP (2023)",
-      prompt:
-        "Compare Ferrari and McLaren cost-per-point under the cost cap in 2023. Use stored commercial facts.",
+      id: "fer-2024",
+      label: "2024 driver FER",
+      prompt: "Rank 2024 drivers by Financial Efficiency Rating (FER)",
     },
     {
-      id: "demo-fer",
-      label: "Top Driver FER Rankings",
-      prompt: `Rank the top drivers by FER (salary per championship point) in ${year}. Use stored salary facts.`,
+      id: "cpp-2023",
+      label: "McLaren vs Ferrari CPP",
+      prompt: "Compare McLaren vs Ferrari Cost-Per-Point in 2023",
     },
     {
-      id: "demo-1998",
-      label: "1998 Telemetry Boundary Test",
-      prompt: "Show me the fastest lap telemetry from the 1998 Monaco Grand Prix.",
-    },
-    {
-      id: "cpp",
-      label: "Cost / point",
-      prompt: `Which constructor has the best cost-per-point in ${year}? Use stored commercial facts, not invented dollars.`,
-    },
-    {
-      id: "fer",
-      label: "Driver FER",
-      prompt: `Rank the top 5 drivers in ${year} by financial efficiency (salary per championship point).`,
-    },
-    {
-      id: "constructor",
-      label: "Constructor after GP",
-      prompt: `Explain constructor points and valuation narrative for ${circuit} in ${year}.`,
-    },
-    {
-      id: "dnf",
-      label: "DNF / ops risk",
-      prompt: `Summarize DNFs as operational and cost risk after ${circuit} in ${year}.`,
-    },
-    {
-      id: "research",
-      label: "Look up online",
-      prompt: `Look up current constructor valuation estimates online for ${year} and cite sources into the fact store.`,
-    },
-    {
-      id: "hello",
-      label: "What can you do?",
-      prompt: "What can you do?",
+      id: "fia-cap",
+      label: "FIA cost cap",
+      prompt: "Explain FIA Cost Cap regulations and breach penalties",
     },
   ];
 }

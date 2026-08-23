@@ -19,9 +19,10 @@ export function CostPerPointChart({ rows }: { rows: ConstructorStanding[] }) {
     return null;
   }
   return (
-    <Card className="mt-4">
+    <Card className="mt-4 border-[color:var(--gold)]/20 bg-[linear-gradient(180deg,rgba(185,28,28,0.08),transparent_38%),var(--card)]">
       <CardHeader>
-        <CardTitle className="text-base">Constructor cost per championship point</CardTitle>
+        <CardTitle className="font-serif text-base tracking-tight">Cost per point — paddock board</CardTitle>
+        <p className="text-xs text-muted-foreground">Cap (USD 135M class) divided by constructor championship points.</p>
       </CardHeader>
       <CardContent className="h-72">
         <ResponsiveContainer width="100%" height="100%">

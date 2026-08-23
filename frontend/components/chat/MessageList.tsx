@@ -1,5 +1,66 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
-import type { ChatMessage } from "@/lib/types";
+import type { AgentTrace, ChatMessage } from "@/lib/types";
+
+function highlight(text: string) {
+  const parts = text.split(/(\bFormula:.*?(?=\s{2,}|$)|https?:\/\/\S+|\/v1\/\S+|fact_store:\/\/\S+|search:\/\/\S+)/g);
+  return parts.map((part, index) => {
+    const isFormula = part.startsWith("Formula:");
+    const isEndpoint = /^(https?:\/\/|\/v1\/|fact_store:\/\/|search:\/\/)/.test(part);
+    if (isFormula || isEndpoint) {
+      return (
+        <code
+          key={`${part}-${index}`}
+          className={
+            isFormula
+              ? "rounded bg-[color:var(--gold)]/15 px-1 font-mono text-[11px] text-[color:var(--gold)]"
+              : "rounded bg-emerald-500/10 px-1 font-mono text-[11px] text-emerald-300"
+          }
+        >
+          {part}
+        </code>
+      );
+    }
+    return <span key={`${part}-${index}`}>{part}</span>;
+  });
+}
+
+function asText(value: unknown): string {
+  if (value == null) {
+    return "";
+  }
+  if (typeof value === "string" || typeof value === "number") {
+    return String(value);
+  }
+  return JSON.stringify(value);
+}
+
+function InlineTrace({ trace }: { trace: AgentTrace }) {
+  return (
+    <details className="mt-3 rounded-lg border border-[color:var(--gold)]/20 bg-black/40 p-2">
+      <summary className="cursor-pointer text-[10px] uppercase tracking-[0.18em] text-[color:var(--gold)]">
+        Technical Manager trace
+      </summary>
+      <div className="mt-2 space-y-2 text-[11px] leading-relaxed">
+        <p>
+          {asText(trace.routing?.intent)} → {asText(trace.routing?.chosen_node ?? trace.routing?.chosen_node)}
+        </p>
+        {(trace.execution_trace ?? []).map((step, index) => (
+          <p key={index} className="font-mono text-muted-foreground">
+            {highlight(`${asText(step.phase ?? step.phase)} — ${asText(step.detail ?? step.detail)}`)}
+          </p>
+        ))}
+        {trace.api_calls.map((call, index) => (
+          <p key={`api-${index}`} className="font-mono text-emerald-300/90">
+            {highlight(`${asText(call.method)} ${asText(call.path)} tool=${asText(call.tool)}`)}
+          </p>
+        ))}
+        {(trace.finance_cards ?? []).map((card, index) => (
+          <p key={`fer-${index}`}>{highlight(`Formula: ${card.formula ?? ""}`)}</p>
+        ))}
+      </div>
+    </details>
+  );
+}
 
 export function MessageList({ messages, pending }: { messages: ChatMessage[]; pending?: boolean }) {
   return (
@@ -26,6 +87,7 @@ export function MessageList({ messages, pending }: { messages: ChatMessage[]; pe
               {message.role === "user" ? "You" : "Desk"}
             </p>
             <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+            {message.role === "assistant" && message.trace ? <InlineTrace trace={message.trace} /> : null}
             {message.error ? <p className="mt-2 text-xs text-destructive">{message.error}</p> : null}
           </div>
         ))}

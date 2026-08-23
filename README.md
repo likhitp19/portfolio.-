@@ -13,9 +13,13 @@ This is **not** a live timing app and **not** a chronological race-control timel
 | [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) | Five Git-tracked phases (setup → manufacturer finance → driver gamification → LangGraph → chat + trace) |
 | [EVALUATION.md](./EVALUATION.md) | Eight-test agent rubric: routing, orchestration, transformation, answer quality, API cleanliness |
 | [DEPLOY.md](./DEPLOY.md) | Vercel UI + Railway API, env vars, CORS, smoke checks |
-| [FACTS.md](./FACTS.md) | Supabase/SQLite commercial store, seed SQL, dashboard cache |
+| [STITCH.md](./STITCH.md) | Google Stitch MCP for design screens (editor only) |
+
+**GitHub (this app only):** [`likhitp19/portfolio.-`](https://github.com/likhitp19/portfolio.-) — clone/push **`interview/`**, not the parent `projects/` folder.
 
 **Production:** Vercel (UI) + Railway (API). The browser calls Railway directly (`NEXT_PUBLIC_API_URL`). See [DEPLOY.md](./DEPLOY.md). Paste secrets in the host dashboards — no keys in git.
+
+**Editor MCP:** [STITCH.md](./STITCH.md) — Google Stitch via [`npx @_davideast/stitch-mcp proxy`](https://stitch.withgoogle.com/docs/mcp/setup). Supabase MCP is already in `.mcp.json`.
 
 ---
 
@@ -105,6 +109,28 @@ npm run dev
 - App: `http://127.0.0.1:3000` (home redirects to the last **completed** season, typically **2025**)
 
 Backend tests: `cd backend && source .venv/bin/activate && pytest -q`.
+
+### Publish this repo
+
+```bash
+cd /path/to/interview          # nested git repo — not ~/Documents/projects
+git push origin main           # git@github.com:likhitp19/portfolio.-.git
+```
+
+Vercel (root `frontend`) and Railway (repo-root Docker) redeploy from `main`. Do not Publish the parent `projects/` folder.
+
+Chat chips: 2024 FER ranking, McLaren vs Ferrari 2023 CPP, FIA cost cap. If Tavily 403s, the researcher uses the fact store + `MOCK_FINANCIAL_DATA` and the Technical Manager tape records the sandbox notice.
+
+### Publish this repo
+
+```bash
+cd /path/to/interview          # nested git repo — not ~/Documents/projects
+git push origin main           # git@github.com:likhitp19/portfolio.-.git
+```
+
+Then Vercel (root `frontend`) and Railway (repo-root Docker) redeploy from `main`. Do not run VS Code Publish on the parent `projects/` folder.
+
+Chat chips (above the input): 2024 FER ranking, McLaren vs Ferrari 2023 CPP, FIA cost cap. If Tavily returns 403/timeout, the researcher uses the fact store + `MOCK_FINANCIAL_DATA` and the Technical Manager tape records `[Notice: Sandbox restricted external search; resolved via internal benchmark store]`. Constructor **wins** come from paginated Jolpica results / WCC `wins`, not a single Ergast page.
 
 ---
 

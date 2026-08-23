@@ -11,6 +11,7 @@ class AgentTrace(BaseModel):
     execution_trace: List[Dict[str, Any]] = Field(default_factory=list)
     missing_inputs: List[str] = Field(default_factory=list)
     assumptions: List[str] = Field(default_factory=list)
+    finance_cards: List[Dict[str, Any]] = Field(default_factory=list)
 
 
 class ChatRequest(BaseModel):

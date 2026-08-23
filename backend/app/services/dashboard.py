@@ -66,8 +66,11 @@ def _http_or_502(exc: OpenF1HTTPError) -> HTTPException:
 
 
 def _is_race(session: Dict[str, Any]) -> bool:
-    name = str(session.get("session_name") or "")
-    stype = str(session.get("session_type") or "")
+    name = str(session.get("session_name") or session.get("session_name") or "")
+    stype = str(session.get("session_type") or session.get("session_type") or "")
+    blob = "{0} {1}".format(name, stype).lower()
+    if "sprint" in blob:
+        return False
     return name == "Race" or stype == "Race"
 
 
@@ -373,6 +376,22 @@ def _insights_from_ergast(
     return fastest_driver, fastest_time, dnf_count, top3
 
 
+async def _wins_from_jolpica_standings(year: int) -> Dict[str, int]:
+    jolpica = JolpicaClient()
+    try:
+        rows = await jolpica.constructor_standings(year)
+    except OpenF1HTTPError:
+        return {}
+    finally:
+        await jolpica.aclose()
+    wins: Dict[str, int] = {}
+    for row in rows:
+        key = canonical_team(str(row.get("team_name") or ""))
+        if key:
+            wins[key] = int(row.get("wins") or 0)
+    return wins if any(wins.values()) else {}
+
+
 async def _constructor_wins(
     client: OpenF1Client,
     year: int,
@@ -380,9 +399,11 @@ async def _constructor_wins(
 ) -> tuple:
     races = await _race_sessions(client, year, meeting_key=meeting_key)
     if meeting_key is None and len(races) > OPENF1_DETAIL_RACE_CAP:
-        mapped = _wins_from_ergast(await _season_results(year))
+        standing = await _wins_from_jolpica_standings(year)
+        season = await _season_results(year)
+        mapped = standing or _wins_from_ergast(season)
         if mapped:
-            return mapped, len(races)
+            return mapped, max(len(season), 1)
     wins: Dict[str, int] = {}
     for race in races:
         session_key = _as_int(race.get("session_key"))
@@ -460,7 +481,8 @@ def _attach_constructor_finance(
     denom = max(race_count, 1)
     enriched: List[ConstructorStanding] = []
     for row in rows:
-        wins = wins_map.get(row.team_name, 0) or wins_map.get(canonical_team(row.team_name), 0)
+        key = canonical_team(row.team_name)
+        wins = wins_map.get(key, 0) or wins_map.get(row.team_name, 0)
         val_row = lookup_valuation(store, row.team_name, year)
         cpp = (cap / row.points) if row.points else None
         enriched.append(

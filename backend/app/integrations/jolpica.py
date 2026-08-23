@@ -79,6 +79,7 @@ class JolpicaClient:
                     "points_current": points,
                     "position": int(item.get("position") or 99),
                     "position_current": int(item.get("position") or 99),
+                    "wins": int(item.get("wins") or 0),
                     "source": "jolpica",
                 }
             )
@@ -124,18 +125,49 @@ class JolpicaClient:
         return rows
 
     async def list_results(self, year: int) -> List[Dict[str, Any]]:
+        """Paginate Ergast/Jolpica results. A single page is ~30 rows (one GP), not a season."""
         url = "{0}/{1}/results.json".format(self.base_url, year)
-        try:
-            response = await self._http.get(url, params={"limit": 600})
-        except httpx.HTTPError as exc:
-            raise OpenF1HTTPError(0, str(exc)) from exc
-        if response.status_code == 404:
-            return []
-        if response.status_code >= 400:
-            raise OpenF1HTTPError(response.status_code, response.text[:400])
-        payload = response.json()
-        return (
-            payload.get("MRData", {})
-            .get("RaceTable", {})
-            .get("Races", [])
-        )
+        by_round: Dict[str, Dict[str, Any]] = {}
+        offset = 0
+        page_size = 100
+        total = None
+        while True:
+            try:
+                response = await self._http.get(url, params={"limit": page_size, "offset": offset})
+            except httpx.HTTPError as exc:
+                raise OpenF1HTTPError(0, str(exc)) from exc
+            if response.status_code == 404:
+                break
+            if response.status_code >= 400:
+                raise OpenF1HTTPError(response.status_code, response.text[:400])
+            payload = response.json()
+            mr = payload.get("MRData") or {}
+            total = int(mr.get("total") or 0)
+            batch = (mr.get("RaceTable") or {}).get("Races") or []
+            if not batch:
+                break
+            merge_ergast_race_pages(by_round, batch)
+            fetched = int(mr.get("limit") or page_size)
+            offset += fetched
+            if total and offset >= total:
+                break
+            if not total and len(batch) < page_size:
+                break
+        return [
+            by_round[key]
+            for key in sorted(by_round, key=lambda item: int(item) if str(item).isdigit() else 0)
+        ]
+
+
+def merge_ergast_race_pages(by_round: Dict[str, Dict[str, Any]], batch: List[Dict[str, Any]]) -> None:
+    for race in batch:
+        key = str(race.get("round") or race.get("raceName") or "")
+        if not key:
+            continue
+        existing = by_round.get(key)
+        if existing is None:
+            copied = dict(race)
+            copied["Results"] = list(race.get("Results") or [])
+            by_round[key] = copied
+        else:
+            existing.setdefault("Results", []).extend(race.get("Results") or [])

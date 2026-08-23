@@ -45,6 +45,10 @@ def parse_usd(text: str) -> List[float]:
     return found
 
 
+class SearchUnavailable(Exception):
+    """403, proxy, or timeout talking to Tavily."""
+
+
 class SearchClient:
     """Tavily search. Dashboard reads must never call this."""
 
@@ -56,14 +60,19 @@ class SearchClient:
         key = (settings.tavily_api_key or "").strip()
         if not key:
             return []
-        async with httpx.AsyncClient(timeout=20.0) as client:
-            response = await client.post(
-                "https://api.tavily.com/search",
-                json={"api_key": key, "query": query, "max_results": max_results, "search_depth": "basic"},
-            )
-            if response.status_code >= 400:
-                return []
-            payload = response.json()
+        try:
+            async with httpx.AsyncClient(timeout=20.0) as client:
+                response = await client.post(
+                    "https://api.tavily.com/search",
+                    json={"api_key": key, "query": query, "max_results": max_results, "search_depth": "basic"},
+                )
+        except (httpx.TimeoutException, httpx.NetworkError, httpx.ProxyError) as exc:
+            raise SearchUnavailable(str(exc)) from exc
+        if response.status_code in {401, 403} or response.status_code >= 500:
+            raise SearchUnavailable("HTTP {0}".format(response.status_code))
+        if response.status_code >= 400:
+            return []
+        payload = response.json()
         hits = []
         for item in payload.get("results") or []:
             url = str(item.get("url") or "")

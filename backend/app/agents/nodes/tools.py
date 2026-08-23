@@ -21,6 +21,7 @@ async def tools_node(state: F1DashboardState) -> Dict[str, Any]:
                 "error": result.get("error"),
                 "record_count": result["record_count"],
                 "timestamp": result["timestamp"],
+                "sandbox_fallback": bool(result.get("sandbox_fallback")),
             }
         )
         payloads.append(
