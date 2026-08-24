@@ -160,7 +160,7 @@ export async function sendChat(body: ChatRequest): Promise<ChatResponse> {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
-    signal: AbortSignal.timeout(90000),
+    signal: AbortSignal.timeout(180000),
   });
   const json = (await response.json().catch(() => null)) as ChatResponse | null;
   if (!response.ok) {
@@ -170,6 +170,63 @@ export async function sendChat(body: ChatRequest): Promise<ChatResponse> {
     throw new ChatApiError(response.status, "Chat response missing trace", json);
   }
   return json;
+}
+
+export async function sendChatStream(
+  body: ChatRequest,
+  onHandoff: (label: string) => void,
+): Promise<ChatResponse> {
+  const payload: ChatRequest = {
+    message: body.message,
+    year: body.year,
+  };
+  if (body.thread_id) {
+    payload.thread_id = body.thread_id;
+  }
+  if (body.meeting_key != null) {
+    payload.meeting_key = body.meeting_key;
+  }
+  const response = await fetch(`${apiBase()}/api/chat/stream`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
+    body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(180000),
+  });
+  if (!response.ok || !response.body) {
+    return sendChat(body);
+  }
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let result: ChatResponse | null = null;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) {
+      break;
+    }
+    buffer += decoder.decode(value, { stream: true });
+    const chunks = buffer.split("\n\n");
+    buffer = chunks.pop() ?? "";
+    for (const chunk of chunks) {
+      const eventLine = chunk.split("\n").find((line) => line.startsWith("event:"));
+      const dataLine = chunk.split("\n").find((line) => line.startsWith("data:"));
+      if (!dataLine) {
+        continue;
+      }
+      const event = eventLine?.slice(6).trim();
+      const data = JSON.parse(dataLine.slice(5).trim()) as { label?: string } & ChatResponse;
+      if (event === "handoff" && data.label) {
+        onHandoff(data.label);
+      }
+      if (event === "result" && data.trace) {
+        result = data;
+      }
+    }
+  }
+  if (!result) {
+    return sendChat(body);
+  }
+  return result;
 }
 
 export function fetchChatThread(threadId: string) {

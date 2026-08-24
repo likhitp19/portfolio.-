@@ -2,14 +2,15 @@
 
 import { FormEvent, useMemo, useState } from "react";
 
-import { InsightChips } from "@/components/chat/InsightChips";
+import { AgentTracePanel } from "@/components/chat/AgentTracePanel";
 import { MessageList } from "@/components/chat/MessageList";
-import { TraceInspector } from "@/components/chat/TraceInspector";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ChatApiError, sendChat } from "@/lib/api";
-import { insightChips, type InsightChip } from "@/lib/chips";
+import { ChatApiError, sendChat, sendChatStream } from "@/lib/api";
 import type { AgentTrace, ChatMessage } from "@/lib/types";
+
+export const CHAMPIONSHIP_STARTER =
+  "Who is projected to win the Championship this year, and what does the data say?";
 
 type ChatPanelProps = {
   year: number;
@@ -21,11 +22,12 @@ export function ChatPanel({ year, meetingKey }: ChatPanelProps) {
   const [threadId, setThreadId] = useState<string | undefined>();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [pending, setPending] = useState(false);
-  const chips = useMemo(() => insightChips(year, meetingKey), [year, meetingKey]);
-  const latestTrace = useMemo(() => {
+  const [handoff, setHandoff] = useState<string>();
+
+  const latestAssistant = useMemo(() => {
     for (let index = messages.length - 1; index >= 0; index -= 1) {
-      if (messages[index].trace) {
-        return messages[index].trace;
+      if (messages[index].role === "assistant") {
+        return messages[index];
       }
     }
     return undefined;
@@ -39,13 +41,20 @@ export function ChatPanel({ year, meetingKey }: ChatPanelProps) {
     setInput("");
     setMessages((current) => [...current, { role: "user", content: trimmed }]);
     setPending(true);
+    setHandoff("🤖 Generalist Orchestrator: Planning query...");
+    const request = {
+      message: trimmed,
+      thread_id: threadId,
+      year,
+      meeting_key: meetingKey,
+    };
     try {
-      const response = await sendChat({
-        message: trimmed,
-        thread_id: threadId,
-        year,
-        meeting_key: meetingKey,
-      });
+      let response;
+      try {
+        response = await sendChatStream(request, (label) => setHandoff(label));
+      } catch {
+        response = await sendChat(request);
+      }
       setThreadId(response.thread_id);
       setMessages((current) => [
         ...current,
@@ -67,6 +76,7 @@ export function ChatPanel({ year, meetingKey }: ChatPanelProps) {
       ]);
     } finally {
       setPending(false);
+      setHandoff(undefined);
     }
   }
 
@@ -75,47 +85,79 @@ export function ChatPanel({ year, meetingKey }: ChatPanelProps) {
     await runPrompt(input);
   }
 
-  function onChip(chip: InsightChip) {
-    void runPrompt(chip.prompt);
-  }
+  const empty = !messages.length && !pending;
+  const followUps = latestAssistant?.layers?.follow_ups ?? [];
 
   return (
-    <section className="overflow-hidden rounded-sm border border-[#2A2A2A] bg-[#1A1A1A]">
-      <div className="flex items-end justify-between gap-4 border-b border-[#2A2A2A] px-6 py-5">
-        <div>
-          <p className="text-[10px] uppercase tracking-[0.28em] text-[#E10600]">Investment thesis</p>
-          <h2 className="text-2xl font-bold tracking-tight text-foreground">Generate AI Investment Thesis</h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Season {year}
-            {meetingKey != null ? ` · circuit ${meetingKey}` : " · all circuits"}
-            {threadId ? ` · thread ${threadId.slice(0, 8)}` : ""}
-          </p>
-        </div>
-        <p className="hidden max-w-xs text-right text-[11px] leading-relaxed text-muted-foreground sm:block">
-          Analysts see the answer. Engineers see the Technical Manager tape. Trace is never invented on the client.
-        </p>
+    <section className="mx-auto flex min-h-[80vh] w-full max-w-4xl flex-col">
+      <div className="mb-8 text-center">
+        <p className="text-[10px] uppercase tracking-[0.28em] text-[#E10600]">Executive Co-Pilot</p>
+        <h2 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">Championship intelligence</h2>
+        <p className="mt-2 text-sm text-muted-foreground">Season {year}</p>
       </div>
-      <div className="grid gap-0 lg:grid-cols-2">
-        <div className="space-y-4 border-b border-border p-6 lg:border-b-0 lg:border-r">
-          <MessageList messages={messages} pending={pending} />
-          <InsightChips chips={chips} disabled={pending} onSelect={onChip} />
+      {empty ? (
+        <div className="flex flex-1 flex-col items-center justify-center gap-6 pb-12">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={pending}
+            onClick={() => void runPrompt(CHAMPIONSHIP_STARTER)}
+            className="h-auto max-w-xl whitespace-normal rounded-2xl border-[#2A2A2A] bg-[#111] px-6 py-4 text-left text-base font-medium leading-relaxed hover:border-[#E10600]/50 hover:bg-[#1A1A1A]"
+          >
+            {CHAMPIONSHIP_STARTER}
+          </Button>
+        </div>
+      ) : (
+        <MessageList messages={messages} pending={pending} handoff={handoff} />
+      )}
+
+      {!empty ? (
+        <div className="mt-8 space-y-4 border-t border-[#2A2A2A] pt-6">
+          <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">Follow-up questions</p>
+          {followUps.length ? (
+            <div className="flex flex-wrap gap-2">
+              {followUps.map((prompt) => (
+                <Button
+                  key={prompt}
+                  type="button"
+                  variant="outline"
+                  disabled={pending}
+                  onClick={() => void runPrompt(prompt)}
+                  className="h-auto max-w-full whitespace-normal rounded-full border-[#2A2A2A] px-4 py-2 text-left text-xs"
+                >
+                  {prompt}
+                </Button>
+              ))}
+            </div>
+          ) : null}
           <form className="flex gap-2" onSubmit={onSubmit}>
             <Input
               value={input}
               onChange={(event) => setInput(event.target.value)}
-              placeholder="Ask valuation, FER, or look up a figure online…"
+              placeholder="Ask a follow-up…"
               disabled={pending}
-              className="h-11 rounded-sm border-[#2A2A2A] bg-[#0A0A0A]"
+              className="h-12 rounded-2xl border-[#2A2A2A] bg-[#0A0A0A] px-4"
             />
-            <Button type="submit" disabled={pending} className="h-11 px-6">
-              Brief
+            <Button type="submit" disabled={pending} className="h-12 rounded-2xl px-6">
+              Send
             </Button>
           </form>
+          <AgentTracePanel trace={latestAssistant?.trace} />
         </div>
-        <div className="p-6">
-          <TraceInspector trace={latestTrace} pending={pending} />
-        </div>
-      </div>
+      ) : (
+        <form className="mt-auto flex gap-2 pt-8" onSubmit={onSubmit}>
+          <Input
+            value={input}
+            onChange={(event) => setInput(event.target.value)}
+            placeholder="Or type your own question…"
+            disabled={pending}
+            className="h-12 rounded-2xl border-[#2A2A2A] bg-[#0A0A0A] px-4"
+          />
+          <Button type="submit" disabled={pending} className="h-12 rounded-2xl px-6">
+            Send
+          </Button>
+        </form>
+      )}
     </section>
   );
 }

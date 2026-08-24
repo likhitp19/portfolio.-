@@ -143,14 +143,26 @@ def signed_quali_delta(
     return sum(deltas) / len(deltas), len(deltas)
 
 
-async def _standings_year(year: int) -> List[Dict[str, Any]]:
-    jolpica = JolpicaClient()
-    try:
-        return await jolpica.constructor_standings(year)
-    except OpenF1HTTPError:
-        return []
-    finally:
-        await jolpica.aclose()
+async def _standings_year(jolpica: JolpicaClient, year: int) -> List[Dict[str, Any]]:
+    for attempt in range(3):
+        try:
+            rows = await jolpica.constructor_standings(year)
+            if rows:
+                return rows
+        except OpenF1HTTPError:
+            pass
+        await asyncio.sleep(0.25 * (attempt + 1))
+    return []
+
+
+def timeline_has_holes(years: List[int], by_year: Dict[int, List[Dict[str, Any]]], current_year: int) -> bool:
+    """Completed seasons should always have a constructor table. Current year may be empty."""
+    for year in years:
+        if year >= current_year:
+            continue
+        if not by_year.get(year):
+            return True
+    return False
 
 
 async def constructor_timeline(from_year: int = 2014, to_year: Optional[int] = None) -> ConstructorTimeline:
@@ -163,14 +175,14 @@ async def constructor_timeline(from_year: int = 2014, to_year: Optional[int] = N
         return cached[1]
 
     years = list(range(start, end + 1))
-    semaphore = asyncio.Semaphore(4)
-
-    async def one(year: int) -> Tuple[int, List[Dict[str, Any]]]:
-        async with semaphore:
-            return year, await _standings_year(year)
-
-    fetched = await asyncio.gather(*[one(year) for year in years])
-    by_year = {year: rows for year, rows in fetched}
+    by_year: Dict[int, List[Dict[str, Any]]] = {}
+    jolpica = JolpicaClient()
+    try:
+        for year in years:
+            by_year[year] = await _standings_year(jolpica, year)
+            await asyncio.sleep(0.08)
+    finally:
+        await jolpica.aclose()
 
     series: List[ConstructorTimelineSeries] = []
     for lineage_id in GRID_LINEAGE_IDS:
@@ -208,7 +220,8 @@ async def constructor_timeline(from_year: int = 2014, to_year: Optional[int] = N
         eras=list(REGULATORY_ERAS),
         source="jolpica",
     )
-    _timeline_cache[cache_key] = (now, payload)
+    if not timeline_has_holes(years, by_year, end):
+        _timeline_cache[cache_key] = (now, payload)
     return payload
 
 

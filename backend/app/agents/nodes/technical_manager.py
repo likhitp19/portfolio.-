@@ -47,6 +47,15 @@ def technical_manager_node(state: F1DashboardState) -> dict:
                 }
             )
             step += 1
+        if state.get("intent") == "championship_projection":
+            reasoning_path.append(
+                {
+                    "step": step,
+                    "actor": "strategic_analyst",
+                    "summary": "Evaluated pace trajectories, DNF risk, remaining scoring weekends, constructor yield, and teammate cushions.",
+                }
+            )
+            step += 1
         reasoning_path.append(
             {
                 "step": step,
@@ -93,6 +102,20 @@ def technical_manager_node(state: F1DashboardState) -> dict:
                 "description": "session list plus race_control messages for a meeting",
             }
         )
+    if "get_session_result" in tools_used:
+        pipelines.append(
+            {
+                "name": "race_classifications",
+                "description": "session_result files for finishes and DNF flags",
+            }
+        )
+    if state.get("intent") == "championship_projection":
+        pipelines.append(
+            {
+                "name": "championship_projection",
+                "description": "standings + classifications + remaining calendar → title probability",
+            }
+        )
     if "get_laps" in tools_used:
         pipelines.append(
             {
@@ -125,6 +148,8 @@ def technical_manager_node(state: F1DashboardState) -> dict:
                 "params": call.get("params") or call.get("args") or {},
                 "status": call.get("status"),
                 "record_count": call.get("record_count"),
+                "duration_ms": call.get("duration_ms"),
+                "timestamp": call.get("timestamp"),
                 "error": call.get("error"),
             }
         )
@@ -186,6 +211,18 @@ def technical_manager_node(state: F1DashboardState) -> dict:
         "missing_inputs": list(state.get("missing_inputs") or []),
         "assumptions": list(state.get("assumptions") or []),
         "finance_cards": finance_cards,
+        "agent_handoffs": [
+            {"agent": "generalist", "label": "🤖 Generalist Orchestrator: Planning query..."},
+            {"agent": "data_analyst", "label": "📊 Data Analyst Agent: Querying race telemetry..."},
+            {"agent": "strategic_analyst", "label": "📈 Strategic Analyst: Evaluating pace, reliability, and margins..."},
+            {"agent": "technical_manager", "label": "🛠️ Technical Manager: Synthesizing validation trace..."},
+        ]
+        if (state.get("intent") or "") == "championship_projection"
+        else [
+            {"agent": "generalist", "label": "🤖 Generalist Orchestrator: Planning query..."},
+            {"agent": "data_analyst", "label": "📊 Data Analyst Agent: Querying race telemetry..."},
+            {"agent": "technical_manager", "label": "🛠️ Technical Manager: Synthesizing validation trace..."},
+        ],
     }
     updates: Dict[str, Any] = {"trace": trace}
     if not (state.get("answer") or "").strip():

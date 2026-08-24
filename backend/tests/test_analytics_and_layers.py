@@ -4,6 +4,7 @@ from app.services.analytics import (
     parse_lap_ms,
     quali_gaps_by_constructor,
     same_session_quali_ms,
+    timeline_has_holes,
 )
 from app.services.chat_layers import split_answer_layers
 from app.services.lineage import constructor_lineage_id
@@ -74,3 +75,11 @@ def test_split_answer_layers_uses_opening_sentences():
     assert "Cost per point" in layers.executive_summary
     assert "USD / pt" in layers.deep_dive
     assert "Formula:" in layers.deep_dive
+
+
+def test_timeline_holes_ignore_current_year():
+    years = [2023, 2024, 2025, 2026]
+    by_year = {2023: [{"points": 1}], 2024: [{"points": 1}], 2025: [{"points": 1}], 2026: []}
+    assert timeline_has_holes(years, by_year, 2026) is False
+    by_year[2024] = []
+    assert timeline_has_holes(years, by_year, 2026) is True

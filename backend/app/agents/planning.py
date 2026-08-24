@@ -146,6 +146,20 @@ def classify_intent(state: F1DashboardState) -> str:
     )
     if any(word in text for word in roi_words):
         return "driver_roi"
+    if any(
+        phrase in text
+        for phrase in (
+            "projected to win",
+            "who will win",
+            "who wins the championship",
+            "win the championship",
+            "drivers champion",
+            "drivers' champion",
+            "title fight",
+            "championship this year",
+        )
+    ) or ("championship" in text and any(word in text for word in ("win", "winner", "predict", "project", "title"))):
+        return "championship_projection"
     if any(word in text for word in ("dnf", "dns", "dsq", "operational", "ops risk", "reliability")):
         return "meeting_insights"
     if any(word in text for word in ("lap", "pace", "telemetry", "lap time", "lap times")):
@@ -294,6 +308,27 @@ def heuristic_analyst_plan(state: F1DashboardState) -> Dict[str, Any]:
         if year:
             want("get_championship_drivers", {"year": year})
             want("get_finance_estimates", {"year": year})
+    elif intent == "championship_projection":
+        plan = [
+            "Load the season Race calendar from OpenF1 sessions",
+            "Read live driver and constructor championship tables",
+            "Fetch recent race classifications (finishes, DNFs)",
+            "Fetch OpenF1 /v1/drivers headshots for the key contenders",
+        ]
+        if year:
+            want("list_sessions", {"year": year})
+            want("get_championship_drivers", {"year": year})
+            want("get_championship_teams", {"year": year})
+            want("get_drivers", {"year": year})
+        sessions = _preview_rows((grouped.get("list_sessions") or [{}])[-1]) if grouped.get("list_sessions") else []
+        races = [s for s in sessions if str(s.get("session_name") or s.get("session_type")) == "Race"]
+        races.sort(key=lambda s: str(s.get("date_start") or ""))
+        for race in races[-5:]:
+            if race.get("session_key"):
+                want("get_session_result", {"session_key": race.get("session_key")})
+        if races and races[-1].get("session_key"):
+            want("get_laps", {"session_key": races[-1].get("session_key")})
+            want("get_drivers", {"session_key": races[-1].get("session_key")})
     elif intent in {"comparative_standings", "unknown"}:
         if year:
             want("list_meetings", {"year": year})
@@ -449,6 +484,17 @@ def _synthesize(
         if intent in {"constructor_finance", "driver_roi"}:
             text = _with_finance_tag(text)
         return text, notes, missing, assumptions
+
+    if intent == "championship_projection":
+        notes.append(
+            {
+                "phase": "handoff",
+                "detail": "Standings, calendar, classifications, and laps retrieved. Strategic Analyst compiles the title projection.",
+            }
+        )
+        return done(
+            "Strategic Analyst will compile the championship projection from retrieved OpenF1 payloads (no cached copy)."
+        )
 
     finance_payload = (grouped.get("get_finance_estimates") or [{}])[-1]
     if finance_payload.get("fact_year_fallback"):
@@ -807,7 +853,8 @@ You do not answer quantitative questions from memory.
 
 MUST set route=data_analyst (never generalist_direct, never invent numbers) when the query
 asks for any of: points, lap times, telemetry, driver comparisons, season rankings,
-efficiency, ROI, salary/point, cost-per-point, valuations joined to results, or any math.
+who wins the championship, projected champion, efficiency, ROI, salary/point, cost-per-point,
+valuations joined to results, or any math.
 
 ONLY set route=generalist_direct for:
 - greetings / what-can-you-do

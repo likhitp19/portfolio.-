@@ -106,12 +106,11 @@ export function ConstructorEraTimeline() {
                   />
                 ))}
                 <XAxis
-                  type="number"
                   dataKey="year"
-                  domain={[data.from_year, data.to_year]}
                   tick={{ fill: "#A3A3A3", fontSize: 11 }}
                   axisLine={{ stroke: "#2A2A2A" }}
-                  allowDecimals={false}
+                  interval={0}
+                  padding={{ left: 8, right: 8 }}
                 />
                 <YAxis
                   tick={{ fill: "#A3A3A3", fontSize: 11 }}
@@ -128,12 +127,12 @@ export function ConstructorEraTimeline() {
                 {data.series.map((series) => (
                   <Line
                     key={series.constructor_id}
-                    type="monotone"
+                    type="linear"
                     dataKey={series.display_name}
                     stroke={LINE_COLORS[series.constructor_id] ?? "#A3A3A3"}
                     strokeWidth={2}
                     dot={{ r: 3 }}
-                    connectNulls={false}
+                    connectNulls
                   />
                 ))}
               </LineChart>

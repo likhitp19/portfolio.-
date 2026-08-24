@@ -31,3 +31,4 @@ class F1DashboardState(TypedDict):
 
     answer: str
     trace: dict
+    report_meta: dict

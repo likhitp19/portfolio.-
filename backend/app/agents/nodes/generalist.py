@@ -47,6 +47,7 @@ def generalist_node(state: F1DashboardState) -> Dict[str, Any]:
         "stint_strategy",
         "position_gain",
         "comparative_standings",
+        "championship_projection",
         "research",
         "regulatory_knowledge",
         "historical_out_of_coverage",

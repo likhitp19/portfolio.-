@@ -11,7 +11,7 @@ class JolpicaClient:
 
     def __init__(self, base_url: Optional[str] = None) -> None:
         self.base_url = (base_url or settings.jolpica_base_url).rstrip("/")
-        self._http = httpx.AsyncClient(timeout=20.0, headers={"Accept": "application/json"})
+        self._http = httpx.AsyncClient(timeout=30.0, headers={"Accept": "application/json"})
 
     async def aclose(self) -> None:
         await self._http.aclose()

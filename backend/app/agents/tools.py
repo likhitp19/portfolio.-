@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from time import perf_counter
 from typing import Any, Dict, List, Optional
 
 import httpx
@@ -54,6 +55,8 @@ def _compact_rows(name: str, rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]
                 "session_name": row.get("session_name") or row.get("session_type"),
                 "session_type": row.get("session_type"),
                 "date_start": row.get("date_start"),
+                "circuit_short_name": row.get("circuit_short_name"),
+                "country_name": row.get("country_name"),
             }
             for row in rows
             if str(row.get("session_name") or "") == "Race" or str(row.get("session_type") or "") == "Race"
@@ -64,6 +67,9 @@ def _compact_rows(name: str, rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]
         keys = (
             "driver_number",
             "full_name",
+            "broadcast_name",
+            "first_name",
+            "last_name",
             "name_acronym",
             "team_name",
             "points",
@@ -71,11 +77,25 @@ def _compact_rows(name: str, rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]
             "position",
             "position_current",
             "session_key",
+            "headshot_url",
         )
         compact = []
         for row in rows:
             compact.append({key: row.get(key) for key in keys if key in row or row.get(key) is not None})
         return compact[:PREVIEW_LIMIT]
+    if name == "get_laps":
+        best: Dict[Any, Dict[str, Any]] = {}
+        for row in rows:
+            number = row.get("driver_number")
+            duration = row.get("lap_duration")
+            try:
+                value = float(duration)
+            except (TypeError, ValueError):
+                continue
+            current = best.get(number)
+            if current is None or value < float(current.get("lap_duration") or 1e9):
+                best[number] = {"driver_number": number, "lap_duration": value}
+        return list(best.values())[:PREVIEW_LIMIT]
     if name == "get_session_result":
         compact = []
         for row in rows:
@@ -92,6 +112,13 @@ def _compact_rows(name: str, rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]
 
 
 async def execute_tool(name: str, args: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    started = perf_counter()
+    result = await _execute_tool(name, args)
+    result["duration_ms"] = round((perf_counter() - started) * 1000.0, 1)
+    return result
+
+
+async def _execute_tool(name: str, args: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     args = dict(args or {})
     meta = TOOL_CATALOG.get(name)
     if meta is None:

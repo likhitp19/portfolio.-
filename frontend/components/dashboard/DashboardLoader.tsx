@@ -46,6 +46,7 @@ export function DashboardLoader({ year, meetingKey }: DashboardLoaderProps) {
 
   return (
     <>
+      <ChatPanel year={year} meetingKey={meetingKey} />
       {loading ? (
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">Loading championship data…</p>
@@ -55,7 +56,6 @@ export function DashboardLoader({ year, meetingKey }: DashboardLoaderProps) {
       ) : (
         <DashboardView data={data} error={error} showChat={false} />
       )}
-      <ChatPanel year={year} meetingKey={meetingKey} />
     </>
   );
 }

@@ -89,7 +89,7 @@ export type AgentTrace = {
   execution_trace?: Array<Record<string, unknown>>;
   missing_inputs?: string[];
   assumptions?: string[];
-  finance_cards?: Array<{ formula?: string; phase?: string }>;
+  agent_handoffs?: Array<{ agent?: string; label?: string }>;
 };
 
 export type ChatRequest = {
@@ -99,9 +99,23 @@ export type ChatRequest = {
   meeting_key?: number;
 };
 
+export type DriverContender = {
+  driver_number: string;
+  full_name: string;
+  team_name: string;
+  points: number;
+  position: number;
+  headshot_url?: string | null;
+};
+
 export type ChatLayers = {
   executive_summary: string;
   deep_dive: string;
+  predicted_winner?: string | null;
+  confidence?: number | null;
+  key_drivers?: string[];
+  contenders?: DriverContender[];
+  follow_ups?: string[];
 };
 
 export type ChatResponse = {

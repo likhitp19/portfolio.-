@@ -17,6 +17,7 @@ KNOWN_INTENTS = {
     "stint_strategy",
     "position_gain",
     "comparative_standings",
+    "championship_projection",
     "regulatory_knowledge",
     "historical_out_of_coverage",
 }
@@ -41,6 +42,7 @@ def data_analyst_node(state: F1DashboardState) -> Dict[str, Any]:
     merged["intent"] = classify_intent(state)
     merged["analyst_system_prompt"] = DATA_ANALYST_SYSTEM_PROMPT
     result = heuristic_analyst_plan(merged)
+    result["intent"] = merged["intent"]
     plan = list(result.get("analysis_plan") or [])
     if DATA_ANALYST_SYSTEM_PROMPT.splitlines()[0] not in " ".join(plan):
         result["analysis_plan"] = [

@@ -10,6 +10,20 @@ def split_answer_layers(answer: str) -> ChatLayers:
             executive_summary="No briefing produced. Inspect the Technical Manager trace.",
             deep_dive="",
         )
+    exec_match = re.search(
+        r"##\s*Executive TL;DR\s*(.+?)(?=\n##\s|\Z)",
+        text,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    dive_match = re.search(
+        r"##\s*In-Depth Research Report\s*(.+)\Z",
+        text,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    if exec_match:
+        summary = " ".join(exec_match.group(1).split())
+        deep_dive = dive_match.group(1).strip() if dive_match else text
+        return ChatLayers(executive_summary=summary, deep_dive=deep_dive)
     paragraphs = [part.strip() for part in re.split(r"\n\s*\n", text) if part.strip()]
     lead = paragraphs[0]
     sentences = [part.strip() for part in re.split(r"(?<=[.!?])\s+", lead) if part.strip()]
