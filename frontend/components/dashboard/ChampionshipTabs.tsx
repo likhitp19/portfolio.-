@@ -1,4 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ConstructorEraTimeline } from "@/components/dashboard/ConstructorEraTimeline";
 import { DriverRoiGrid } from "@/components/dashboard/DriverCard";
 import { ManufacturerDashboard } from "@/components/dashboard/ManufacturerDashboard";
 import { OverallSummary } from "@/components/dashboard/OverallSummary";
@@ -17,6 +18,7 @@ type ChampionshipTabsProps = {
   constructors: ConstructorStanding[];
   summary: ChampionshipSummary;
   driverProgression: StandingsProgression;
+  constructorProgression?: StandingsProgression;
 };
 
 export function ChampionshipTabs({
@@ -25,6 +27,7 @@ export function ChampionshipTabs({
   constructors,
   summary,
   driverProgression,
+  constructorProgression,
 }: ChampionshipTabsProps) {
   return (
     <Tabs defaultValue="manufacturer">
@@ -50,6 +53,12 @@ export function ChampionshipTabs({
       </TabsList>
       <TabsContent value="manufacturer" className="space-y-4">
         <ManufacturerDashboard rows={constructors} year={year} />
+        <ConstructorEraTimeline />
+        <PointsProgressionChart
+          data={constructorProgression?.series?.length ? constructorProgression : { circuits: [], series: [] }}
+          title="Constructor yield over the season"
+          subtitle="FIA constructor points after each GP. Driver scores stay on Driver Assets."
+        />
       </TabsContent>
       <TabsContent value="driver" className="space-y-4">
         <DriverRoiGrid rows={drivers} />

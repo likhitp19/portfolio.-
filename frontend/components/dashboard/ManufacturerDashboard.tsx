@@ -116,8 +116,6 @@ export function ManufacturerDashboard({
         ))}
       </div>
 
-      <ManufacturerStandings rows={rows} />
-
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
         <CostPerPointChart rows={rows} />
         <Card className="rounded-sm border-[#2A2A2A] bg-[#1A1A1A] shadow-none">
@@ -139,11 +137,13 @@ export function ManufacturerDashboard({
               <p className="mt-3 text-sm text-muted-foreground">No cost-per-point series for this selection.</p>
             )}
             <p className="mt-auto pt-6 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-              Execution trace lives in the desk below
+              Ask the co-pilot below
             </p>
           </CardContent>
         </Card>
       </div>
+
+      <ManufacturerStandings rows={rows} />
     </div>
   );
 }

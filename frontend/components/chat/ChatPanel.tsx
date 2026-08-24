@@ -104,62 +104,59 @@ export function ChatPanel({ year = CURRENT_SEASON, meetingKey }: ChatPanelProps)
   const season = year === 2025 ? CURRENT_SEASON : year;
 
   return (
-    <section className="mx-auto flex min-h-[calc(100vh-7rem)] w-full max-w-3xl flex-col">
-      <div className="flex flex-1 flex-col">
-        {empty ? (
-          <div className="flex flex-1 flex-col items-center justify-center px-4">
-            <p className="text-[10px] uppercase tracking-[0.28em] text-[#E10600]">Executive Co-Pilot</p>
-            <h1 className="mt-3 text-center text-3xl font-semibold tracking-tight">Championship intelligence</h1>
-            <p className="mt-2 text-sm text-muted-foreground">Season {season}</p>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={pending}
-              onClick={() => void runPrompt(CHAMPIONSHIP_STARTER)}
-              className="mt-8 h-auto max-w-xl whitespace-normal rounded-2xl border-[#2A2A2A] bg-[#111] px-6 py-4 text-left text-base font-medium leading-relaxed hover:border-[#E10600]/50 hover:bg-[#1A1A1A]"
-            >
-              {CHAMPIONSHIP_STARTER}
-            </Button>
-          </div>
-        ) : (
-          <div className="flex-1 px-1 pb-4">
-            <MessageList messages={messages} pending={pending} handoff={handoff} />
-            {followUps.length ? (
-              <div className="mt-6 space-y-2">
-                <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
-                  Follow-up questions
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {followUps.map((prompt) => (
-                    <Button
-                      key={prompt}
-                      type="button"
-                      variant="outline"
-                      disabled={pending}
-                      onClick={() => void runPrompt(prompt)}
-                      className="h-auto max-w-full whitespace-normal rounded-full border-[#2A2A2A] px-4 py-2 text-left text-xs"
-                    >
-                      {prompt}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-            <div className="mt-6">
-              <AgentTracePanel trace={latestAssistant?.trace} />
-            </div>
-            {latestAssistant ? (
-              <div className="mt-4">
-                <AnswerChart content={latestAssistant.content} layers={latestAssistant.layers} />
-              </div>
-            ) : null}
-          </div>
-        )}
+    <section className="mx-auto w-full max-w-4xl border-t border-[#2A2A2A] pt-10">
+      <div className="mb-6 text-center">
+        <p className="text-[10px] uppercase tracking-[0.28em] text-[#E10600]">Executive Co-Pilot</p>
+        <h2 className="mt-2 text-2xl font-semibold tracking-tight">Championship intelligence</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Season {season}</p>
       </div>
-      <form
-        className="sticky bottom-0 mt-4 flex gap-2 border-t border-[#2A2A2A] bg-background py-4"
-        onSubmit={onSubmit}
-      >
+      {empty ? (
+        <div className="mb-6 flex justify-center">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={pending}
+            onClick={() => void runPrompt(CHAMPIONSHIP_STARTER)}
+            className="h-auto max-w-xl whitespace-normal rounded-2xl border-[#2A2A2A] bg-[#111] px-6 py-4 text-left text-base font-medium leading-relaxed hover:border-[#E10600]/50 hover:bg-[#1A1A1A]"
+          >
+            {CHAMPIONSHIP_STARTER}
+          </Button>
+        </div>
+      ) : (
+        <div className="mb-6">
+          <MessageList messages={messages} pending={pending} handoff={handoff} />
+          {followUps.length ? (
+            <div className="mt-6 space-y-2">
+              <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                Follow-up questions
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {followUps.map((prompt) => (
+                  <Button
+                    key={prompt}
+                    type="button"
+                    variant="outline"
+                    disabled={pending}
+                    onClick={() => void runPrompt(prompt)}
+                    className="h-auto max-w-full whitespace-normal rounded-full border-[#2A2A2A] px-4 py-2 text-left text-xs"
+                  >
+                    {prompt}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          <div className="mt-6">
+            <AgentTracePanel trace={latestAssistant?.trace} />
+          </div>
+          {latestAssistant ? (
+            <div className="mt-4">
+              <AnswerChart content={latestAssistant.content} layers={latestAssistant.layers} />
+            </div>
+          ) : null}
+        </div>
+      )}
+      <form className="flex gap-2" onSubmit={onSubmit}>
         <Input
           value={input}
           onChange={(event) => setInput(event.target.value)}
