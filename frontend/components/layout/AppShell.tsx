@@ -15,7 +15,7 @@ export function AppShell({ year, years, meetings, meetingKey, children }: AppShe
   return (
     <div className="min-h-screen bg-background text-foreground">
       <TopNav year={year} years={years} meetings={meetings} meetingKey={meetingKey} />
-      <main className="mx-auto grid max-w-7xl gap-6 px-6 py-8">{children}</main>
+      <main className="mx-auto min-h-[calc(100vh-3.5rem)] max-w-4xl px-4 py-6">{children}</main>
     </div>
   );
 }

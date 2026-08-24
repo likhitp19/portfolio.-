@@ -24,7 +24,7 @@ export function TopNav({ year, years, meetings, meetingKey }: TopNavProps) {
     <header className="sticky top-0 z-50 border-b border-[#2A2A2A] bg-[#1A1A1A]">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-6">
         <div className="flex min-w-0 items-center gap-6">
-          <Link href={`/season/${selectedYear}`} className="shrink-0 text-lg font-black tracking-tighter text-[#E10600]">
+          <Link href="/season/2026" className="shrink-0 text-lg font-black tracking-tighter text-[#E10600]">
             APEX ANALYTICS
           </Link>
           <Badge className="hidden rounded-sm border-[#2A2A2A] bg-transparent text-[10px] uppercase tracking-[0.16em] text-muted-foreground sm:inline-flex">
@@ -37,7 +37,7 @@ export function TopNav({ year, years, meetings, meetingKey }: TopNavProps) {
             <select
               className="ml-2 h-8 rounded-sm border border-[#2A2A2A] bg-[#0A0A0A] px-2 text-sm text-foreground"
               style={{ colorScheme: "dark" }}
-              value={selectedYear}
+              value={selectedYear === 2025 ? 2026 : selectedYear}
               onChange={(event) => router.push(`/season/${event.target.value}`)}
             >
               {seasonYears.map((item) => (

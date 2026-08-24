@@ -10,6 +10,16 @@ const nextConfig: NextConfig = {
         destination: "/season/2026",
         permanent: false,
       },
+      {
+        source: "/season/2025",
+        destination: "/season/2026",
+        permanent: false,
+      },
+      {
+        source: "/season/2025/meeting/:meetingKey",
+        destination: "/season/2026/meeting/:meetingKey",
+        permanent: false,
+      },
     ];
   },
   async rewrites() {
