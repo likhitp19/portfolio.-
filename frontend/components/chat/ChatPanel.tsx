@@ -3,6 +3,7 @@
 import { FormEvent, useMemo, useState } from "react";
 
 import { AgentTracePanel } from "@/components/chat/AgentTracePanel";
+import { AnswerChart } from "@/components/chat/AnswerChart";
 import { MessageList } from "@/components/chat/MessageList";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +12,19 @@ import type { AgentTrace, ChatMessage } from "@/lib/types";
 
 export const CHAMPIONSHIP_STARTER =
   "Who is projected to win the Championship this year, and what does the data say?";
+
+const CURRENT_SEASON = 2026;
+
+function yearForPrompt(text: string, pageYear: number) {
+  const named = text.match(/\b((?:19|20)\d{2})\b/);
+  if (named) {
+    return Number(named[1]);
+  }
+  if (/this year|this season/i.test(text)) {
+    return CURRENT_SEASON;
+  }
+  return pageYear;
+}
 
 type ChatPanelProps = {
   year: number;
@@ -45,7 +59,7 @@ export function ChatPanel({ year, meetingKey }: ChatPanelProps) {
     const request = {
       message: trimmed,
       thread_id: threadId,
-      year,
+      year: yearForPrompt(trimmed, year),
       meeting_key: meetingKey,
     };
     try {
@@ -93,7 +107,7 @@ export function ChatPanel({ year, meetingKey }: ChatPanelProps) {
       <div className="mb-8 text-center">
         <p className="text-[10px] uppercase tracking-[0.28em] text-[#E10600]">Executive Co-Pilot</p>
         <h2 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">Championship intelligence</h2>
-        <p className="mt-2 text-sm text-muted-foreground">Season {year}</p>
+        <p className="mt-2 text-sm text-muted-foreground">Season {CURRENT_SEASON}</p>
       </div>
       {empty ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-6 pb-12">
@@ -143,6 +157,9 @@ export function ChatPanel({ year, meetingKey }: ChatPanelProps) {
             </Button>
           </form>
           <AgentTracePanel trace={latestAssistant?.trace} />
+          {latestAssistant ? (
+            <AnswerChart content={latestAssistant.content} layers={latestAssistant.layers} />
+          ) : null}
         </div>
       ) : (
         <form className="mt-auto flex gap-2 pt-8" onSubmit={onSubmit}>

@@ -1,12 +1,10 @@
 "use client";
 
-import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-
 import { ContenderCards } from "@/components/chat/ContenderCards";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { numericSeriesFromTables, splitCopilotLayers } from "@/lib/copilotLayers";
+import { splitCopilotLayers } from "@/lib/copilotLayers";
 import type { ChatLayers } from "@/lib/types";
 
 function DeepDiveBody({ text }: { text: string }) {
@@ -91,7 +89,6 @@ export function CopilotAnswer({
 }) {
   const parsed = splitCopilotLayers(content, layers?.executive_summary);
   const deepDive = layers?.deep_dive || parsed.deepDive;
-  const series = numericSeriesFromTables(parsed.tables);
   const winner = layers?.predicted_winner;
   const confidence = layers?.confidence;
   const drivers = layers?.key_drivers ?? [];
@@ -130,20 +127,6 @@ export function CopilotAnswer({
           In-Depth Research Report
         </p>
         <DeepDiveBody text={deepDive} />
-        {series.length >= 2 ? (
-          <div className="mt-4 h-36">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={series} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                <XAxis dataKey="label" tick={{ fill: "#A3A3A3", fontSize: 10 }} axisLine={{ stroke: "#2A2A2A" }} />
-                <YAxis tick={{ fill: "#A3A3A3", fontSize: 10 }} axisLine={false} tickLine={false} width={48} />
-                <Tooltip
-                  contentStyle={{ background: "#0A0A0A", border: "1px solid #2A2A2A", borderRadius: 8, fontSize: 12 }}
-                />
-                <Bar dataKey="value" fill="#E10600" radius={0} maxBarSize={28} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        ) : null}
       </div>
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
     </div>

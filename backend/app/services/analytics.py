@@ -232,11 +232,13 @@ async def teammate_delta_matrix(year: int) -> TeammateDeltaMatrix:
         return cached[1]
 
     jolpica = JolpicaClient()
+    upstream_failed = False
     try:
         drivers = await jolpica.driver_standings(year)
         races = await jolpica.list_qualifying(year)
     except OpenF1HTTPError:
         drivers, races = [], []
+        upstream_failed = True
     finally:
         await jolpica.aclose()
 
@@ -278,5 +280,6 @@ async def teammate_delta_matrix(year: int) -> TeammateDeltaMatrix:
         quali_risk_ms=QUALI_RISK_MS,
         source="jolpica",
     )
-    _teammate_cache[year] = (now, payload)
+    if not upstream_failed:
+        _teammate_cache[year] = (now, payload)
     return payload

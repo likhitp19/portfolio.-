@@ -31,7 +31,7 @@ async def lifespan(app: FastAPI):
                 live = get_client()
             except RuntimeError:
                 return
-            for year in (2024, 2025):
+            for year in (2024, 2025, 2026):
                 try:
                     await dashboard_overview(live, year, None)
                 except Exception:

@@ -1,16 +1,17 @@
 from datetime import datetime, timezone
 
-from app.agents.planning import classify_intent
+from app.agents.planning import _year, classify_intent
 from app.services.championship_report import build_championship_report
 from app.services.chat_layers import split_answer_layers
 
 
-def test_championship_projection_intent():
+def test_this_year_means_calendar_year():
     state = {
         "user_query": "Who is projected to win the Championship this year, and what does the data say?",
         "season_year": 2025,
     }
     assert classify_intent(state) == "championship_projection"
+    assert _year(state) == datetime.now(timezone.utc).year
 
 
 def test_championship_report_from_live_payloads():

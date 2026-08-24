@@ -18,7 +18,7 @@ export function TopNav({ year, years, meetings, meetingKey }: TopNavProps) {
   const params = useParams<{ year?: string; meetingKey?: string }>();
   const selectedYear = Number(params.year || year);
   const selectedMeeting = params.meetingKey ? Number(params.meetingKey) : meetingKey;
-  const seasonYears = years.length ? years : [selectedYear];
+  const seasonYears = Array.from(new Set([...years, 2026, selectedYear])).sort((a, b) => b - a);
 
   return (
     <header className="sticky top-0 z-50 border-b border-[#2A2A2A] bg-[#1A1A1A]">

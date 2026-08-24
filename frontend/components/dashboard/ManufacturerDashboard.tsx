@@ -116,6 +116,8 @@ export function ManufacturerDashboard({
         ))}
       </div>
 
+      <ManufacturerStandings rows={rows} />
+
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
         <CostPerPointChart rows={rows} />
         <Card className="rounded-sm border-[#2A2A2A] bg-[#1A1A1A] shadow-none">
@@ -142,8 +144,6 @@ export function ManufacturerDashboard({
           </CardContent>
         </Card>
       </div>
-
-      <ManufacturerStandings rows={rows} />
     </div>
   );
 }

@@ -1,5 +1,7 @@
 import { ChampionshipTabs } from "@/components/dashboard/ChampionshipTabs";
 import { ChatPanel } from "@/components/chat/ChatPanel";
+import { ConstructorEraTimeline } from "@/components/dashboard/ConstructorEraTimeline";
+import { PointsProgressionChart } from "@/components/dashboard/PointsProgressionChart";
 import { Alert } from "@/components/ui/alert";
 import { F1_LIVE_LOCK } from "@/lib/api";
 import type { DashboardPayload } from "@/lib/types";
@@ -42,6 +44,7 @@ export function DashboardView({
 
   return (
     <>
+      {showChat ? <ChatPanel year={data.year} meetingKey={data.meetingKey} /> : null}
       <div>
         <p className="text-[10px] font-medium uppercase tracking-[0.28em] text-[#E10600]">Apex Analytics · Championship book</p>
         <h1 className="text-3xl font-bold tracking-tight">
@@ -60,9 +63,13 @@ export function DashboardView({
         constructors={data.constructors}
         summary={data.summary}
         driverProgression={data.progression}
-        constructorProgression={data.constructor_progression}
       />
-      {showChat ? <ChatPanel year={data.year} meetingKey={data.meetingKey} /> : null}
+      <ConstructorEraTimeline />
+      <PointsProgressionChart
+        data={data.constructor_progression?.series?.length ? data.constructor_progression : { circuits: [], series: [] }}
+        title="Constructor yield over the season"
+        subtitle="FIA constructor points after each GP. Driver scores stay on Driver Assets."
+      />
     </>
   );
 }

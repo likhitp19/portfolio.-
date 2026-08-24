@@ -1,8 +1,14 @@
 import re
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from app.agents.state import F1DashboardState
 from app.config import settings
+
+# A race session is treated as completed once its scheduled start has elapsed
+# plus a buffer covering the race window. The list_sessions preview only carries
+# date_start, so we cannot rely on date_end here.
+_RACE_COMPLETED_BUFFER_SECONDS = 3 * 3600
 
 CHITCHAT_PHRASES = (
     "what can you do",
@@ -44,9 +50,12 @@ def _year(state: F1DashboardState) -> Optional[int]:
     queried = _query_year(state)
     if queried:
         return queried
+    text = _folded(_query(state))
+    if "this year" in text or "this season" in text:
+        return datetime.now(timezone.utc).year
     if state.get("season_year"):
         return int(state["season_year"])
-    return None
+    return datetime.now(timezone.utc).year
 
 
 def is_chitchat(query: str) -> bool:
@@ -258,6 +267,24 @@ def _payloads_by_tool(state: F1DashboardState) -> Dict[str, List[Dict[str, Any]]
     return grouped
 
 
+def _is_completed_race(session: Dict[str, Any]) -> bool:
+    """True only for races whose scheduled start has already elapsed.
+
+    Mid-season the calendar tail is the finale, not the latest completed GP, so
+    form/DNF/pace fetches must be scoped to completed races only.
+    """
+    raw = session.get("date_start")
+    if not raw:
+        return False
+    try:
+        parsed = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.timestamp() + _RACE_COMPLETED_BUFFER_SECONDS <= datetime.now(timezone.utc).timestamp()
+
+
 def _fp(tool: str, args: Dict[str, Any]) -> Tuple[str, Tuple[Tuple[str, str], ...]]:
     items = tuple(sorted((str(k), str(v)) for k, v in args.items()))
     return (tool, items)
@@ -323,12 +350,14 @@ def heuristic_analyst_plan(state: F1DashboardState) -> Dict[str, Any]:
         sessions = _preview_rows((grouped.get("list_sessions") or [{}])[-1]) if grouped.get("list_sessions") else []
         races = [s for s in sessions if str(s.get("session_name") or s.get("session_type")) == "Race"]
         races.sort(key=lambda s: str(s.get("date_start") or ""))
-        for race in races[-5:]:
+        completed = [r for r in races if _is_completed_race(r)]
+        recent = completed[-5:] if completed else []
+        for race in recent:
             if race.get("session_key"):
                 want("get_session_result", {"session_key": race.get("session_key")})
-        if races and races[-1].get("session_key"):
-            want("get_laps", {"session_key": races[-1].get("session_key")})
-            want("get_drivers", {"session_key": races[-1].get("session_key")})
+        if recent and recent[-1].get("session_key"):
+            want("get_laps", {"session_key": recent[-1].get("session_key")})
+            want("get_drivers", {"session_key": recent[-1].get("session_key")})
     elif intent in {"comparative_standings", "unknown"}:
         if year:
             want("list_meetings", {"year": year})
