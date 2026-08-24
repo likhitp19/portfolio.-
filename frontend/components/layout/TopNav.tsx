@@ -21,21 +21,21 @@ export function TopNav({ year, years, meetings, meetingKey }: TopNavProps) {
   const seasonYears = years.length ? years : [selectedYear];
 
   return (
-    <header className="border-b border-[color:var(--gold)]/15 bg-black/40 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-7xl flex-col gap-4 px-6 py-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-center gap-3">
-          <Link href={`/season/${selectedYear}`} className="font-serif text-xl tracking-tight">
-            Paddock Ledger
+    <header className="sticky top-0 z-50 border-b border-[#2A2A2A] bg-[#1A1A1A]">
+      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-6">
+        <div className="flex min-w-0 items-center gap-6">
+          <Link href={`/season/${selectedYear}`} className="shrink-0 text-lg font-black tracking-tighter text-[#E10600]">
+            APEX ANALYTICS
           </Link>
-          <Badge className="border-[color:var(--gold)]/30 bg-transparent text-[10px] uppercase tracking-[0.16em] text-[color:var(--gold)]">
-            Commercial
+          <Badge className="hidden rounded-sm border-[#2A2A2A] bg-transparent text-[10px] uppercase tracking-[0.16em] text-muted-foreground sm:inline-flex">
+            Executive Pitwall
           </Badge>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <label className="text-xs uppercase tracking-wide text-muted-foreground">
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          <label className="text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
             Season
             <select
-              className="ml-2 h-9 rounded-md border border-input bg-card px-2 text-sm text-foreground"
+              className="ml-2 h-8 rounded-sm border border-[#2A2A2A] bg-[#0A0A0A] px-2 text-sm text-foreground"
               style={{ colorScheme: "dark" }}
               value={selectedYear}
               onChange={(event) => router.push(`/season/${event.target.value}`)}
@@ -47,10 +47,10 @@ export function TopNav({ year, years, meetings, meetingKey }: TopNavProps) {
               ))}
             </select>
           </label>
-          <label className="text-xs uppercase tracking-wide text-muted-foreground">
-            Circuit
+          <label className="text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+            All Circuits
             <select
-              className="ml-2 h-9 max-w-64 rounded-md border border-input bg-card px-2 text-sm text-foreground"
+              className="ml-2 h-8 max-w-64 rounded-sm border border-[#2A2A2A] bg-[#0A0A0A] px-2 text-sm text-foreground"
               style={{ colorScheme: "dark" }}
               value={selectedMeeting ?? ""}
               onChange={(event) => {

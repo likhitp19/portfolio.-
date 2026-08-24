@@ -32,7 +32,7 @@ export function PointsProgressionChart({
   }
 
   return (
-    <Card className="overflow-hidden border-[color:var(--gold)]/20 bg-[radial-gradient(900px_circle_at_0%_0%,rgba(200,162,74,0.08),transparent_42%)]">
+    <Card className="overflow-hidden border-[#2A2A2A] bg-[#1A1A1A]">
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         {subtitle ? <p className="text-xs text-muted-foreground">{subtitle}</p> : null}
@@ -40,11 +40,11 @@ export function PointsProgressionChart({
       <CardContent className="h-80">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={rows}>
-            <CartesianGrid strokeDasharray="3 3" stroke="oklch(1 0 0 / 12%)" />
+            <CartesianGrid stroke="#2A2A2A" vertical={false} />
             <XAxis dataKey="circuit" stroke="currentColor" tick={{ fontSize: 11 }} />
             <YAxis stroke="currentColor" tick={{ fontSize: 11 }} />
             <Tooltip
-              contentStyle={{ background: "#18181b", border: "1px solid #27272a", borderRadius: 8 }}
+              contentStyle={{ background: "#0A0A0A", border: "1px solid #2A2A2A", borderRadius: 2 }}
               formatter={(value, name) => [`${value} pts`, String(name)]}
               labelFormatter={(label) => `GP: ${label}`}
             />

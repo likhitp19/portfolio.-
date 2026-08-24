@@ -43,18 +43,19 @@ export function DashboardView({
   return (
     <>
       <div>
-        <p className="text-[10px] uppercase tracking-[0.28em] text-[color:var(--gold)]">Championship book</p>
-        <h1 className="font-serif text-3xl tracking-tight">
+        <p className="text-[10px] font-medium uppercase tracking-[0.28em] text-[#E10600]">Apex Analytics · Championship book</p>
+        <h1 className="text-3xl font-bold tracking-tight">
           {meeting ? meeting.meeting_name : `${data.year} season ledger`}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {meeting
             ? `${meeting.circuit_short_name} · ${meeting.country_name}`
-            : "Constructor efficiency, driver retainers, and circuit drill-down — one meeting_key, one payload."}
+            : "Constructor yield, cost per point, and asset expenditure — one meeting_key, one payload."}
         </p>
       </div>
       <ChampionshipTabs
         key={`tabs-${viewKey}`}
+        year={data.year}
         drivers={data.drivers}
         constructors={data.constructors}
         summary={data.summary}

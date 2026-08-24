@@ -79,11 +79,11 @@ export function ChatPanel({ year, meetingKey }: ChatPanelProps) {
   }
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-[color:var(--gold)]/20 bg-[radial-gradient(1200px_circle_at_0%_0%,rgba(200,162,74,0.08),transparent_42%),linear-gradient(180deg,rgba(18,18,20,0.95),rgba(10,10,12,0.98))] shadow-[0_0_80px_rgba(200,162,74,0.06)]">
-      <div className="flex items-end justify-between gap-4 border-b border-[color:var(--gold)]/15 px-6 py-5">
+    <section className="overflow-hidden rounded-sm border border-[#2A2A2A] bg-[#1A1A1A]">
+      <div className="flex items-end justify-between gap-4 border-b border-[#2A2A2A] px-6 py-5">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.28em] text-[color:var(--gold)]">Deal room</p>
-          <h2 className="font-serif text-2xl tracking-tight text-foreground">Commercial desk</h2>
+          <p className="text-[10px] uppercase tracking-[0.28em] text-[#E10600]">Investment thesis</p>
+          <h2 className="text-2xl font-bold tracking-tight text-foreground">Generate AI Investment Thesis</h2>
           <p className="mt-1 text-xs text-muted-foreground">
             Season {year}
             {meetingKey != null ? ` · circuit ${meetingKey}` : " · all circuits"}
@@ -104,7 +104,7 @@ export function ChatPanel({ year, meetingKey }: ChatPanelProps) {
               onChange={(event) => setInput(event.target.value)}
               placeholder="Ask valuation, FER, or look up a figure online…"
               disabled={pending}
-              className="h-11 border-[color:var(--gold)]/20 bg-black/30"
+              className="h-11 rounded-sm border-[#2A2A2A] bg-[#0A0A0A]"
             />
             <Button type="submit" disabled={pending} className="h-11 px-6">
               Brief
