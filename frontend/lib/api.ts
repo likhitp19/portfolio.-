@@ -3,10 +3,12 @@ import type {
   ChatRequest,
   ChatResponse,
   ConstructorStanding,
+  ConstructorTimeline,
   DashboardPayload,
   DriverStanding,
   Meeting,
   StandingsProgression,
+  TeammateDeltaMatrix,
 } from "@/lib/types";
 
 export class ApiError extends Error {
@@ -60,10 +62,10 @@ function parseApiError(status: number, raw: string): ApiError {
   return new ApiError(status, raw || `Request failed (${status})`);
 }
 
-async function getJson<T>(path: string): Promise<T> {
+async function getJson<T>(path: string, timeoutMs = 90000): Promise<T> {
   const response = await fetch(`${apiBase()}${path}`, {
     cache: "no-store",
-    signal: AbortSignal.timeout(90000),
+    signal: AbortSignal.timeout(timeoutMs),
   });
   if (!response.ok) {
     throw parseApiError(response.status, await response.text());
@@ -96,6 +98,14 @@ export function fetchSummary(year: number, meetingKey?: number) {
 
 export function fetchProgression(year: number) {
   return getJson<StandingsProgression>(`/api/standings/progression?year=${year}`);
+}
+
+export function fetchConstructorTimeline(fromYear = 2014) {
+  return getJson<ConstructorTimeline>(`/api/analytics/constructor-timeline?from_year=${fromYear}`, 120000);
+}
+
+export function fetchTeammateDelta(year: number) {
+  return getJson<TeammateDeltaMatrix>(`/api/analytics/teammate-delta?year=${year}`, 120000);
 }
 
 export async function loadDashboard(year: number, meetingKey?: number): Promise<DashboardPayload> {

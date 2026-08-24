@@ -99,15 +99,61 @@ export type ChatRequest = {
   meeting_key?: number;
 };
 
+export type ChatLayers = {
+  executive_summary: string;
+  deep_dive: string;
+};
+
 export type ChatResponse = {
   thread_id: string;
   answer: string;
+  layers?: ChatLayers;
   trace: AgentTrace;
 };
 
 export type ChatMessage = {
   role: "user" | "assistant";
   content: string;
+  layers?: ChatLayers;
   trace?: AgentTrace;
   error?: string;
+};
+
+export type ConstructorTimelineSeries = {
+  constructor_id: string;
+  display_name: string;
+  points: Array<number | null>;
+  positions: Array<number | null>;
+};
+
+export type ConstructorTimeline = {
+  from_year: number;
+  to_year: number;
+  years: number[];
+  series: ConstructorTimelineSeries[];
+  eras: { id: string; label: string; start_year: number; end_year: number }[];
+  source: string;
+};
+
+export type TeammateDeltaRow = {
+  constructor_id: string;
+  team_name: string;
+  driver_a_name: string;
+  driver_b_name: string;
+  points_a: number;
+  points_b: number;
+  points_share_pct: number;
+  dominant_share_pct: number;
+  quali_pace_delta_ms: number | null;
+  signed_delta_ms: number | null;
+  sample_races: number;
+  quadrant: string;
+};
+
+export type TeammateDeltaMatrix = {
+  year: number;
+  rows: TeammateDeltaRow[];
+  share_risk_pct: number;
+  quali_risk_ms: number;
+  source: string;
 };

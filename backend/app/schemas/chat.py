@@ -3,6 +3,11 @@ from typing import Any, Dict, List, Optional, Union
 from pydantic import BaseModel, Field
 
 
+class ChatLayers(BaseModel):
+    executive_summary: str = ""
+    deep_dive: str = ""
+
+
 class AgentTrace(BaseModel):
     routing: Dict[str, Any] = Field(default_factory=dict)
     reasoning_path: List[Dict[str, Any]] = Field(default_factory=list)
@@ -24,12 +29,14 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     thread_id: str
     answer: str
+    layers: ChatLayers = Field(default_factory=ChatLayers)
     trace: AgentTrace
 
 
 class ChatSnapshot(BaseModel):
     thread_id: str
     answer: str
+    layers: ChatLayers = Field(default_factory=ChatLayers)
     trace: AgentTrace
     state: Dict[str, Any]
     route: Union[str] = ""

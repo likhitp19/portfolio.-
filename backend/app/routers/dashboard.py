@@ -15,7 +15,9 @@ from app.schemas.dashboard import (
     StandingsProgression,
 )
 from app.services import dashboard as svc
+from app.services import analytics as analytics_svc
 from app.services.commercial import refresh_commercial_facts
+from app.schemas.analytics import ConstructorTimeline, TeammateDeltaMatrix
 
 router = APIRouter(prefix="/api")
 
@@ -81,6 +83,19 @@ async def get_dashboard(
     client: OpenF1Client = Depends(openf1_dep),
 ) -> DashboardOverview:
     return await svc.dashboard_overview(client, year, meeting_key)
+
+
+@router.get("/analytics/constructor-timeline", response_model=ConstructorTimeline)
+async def get_constructor_timeline(
+    from_year: int = Query(2014, ge=1950, le=2100),
+    to_year: Optional[int] = Query(None, ge=1950, le=2100),
+) -> ConstructorTimeline:
+    return await analytics_svc.constructor_timeline(from_year, to_year)
+
+
+@router.get("/analytics/teammate-delta", response_model=TeammateDeltaMatrix)
+async def get_teammate_delta(year: int = Query(..., ge=1950, le=2100)) -> TeammateDeltaMatrix:
+    return await analytics_svc.teammate_delta_matrix(year)
 
 
 @router.get("/facts/commercial")

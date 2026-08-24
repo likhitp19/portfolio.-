@@ -6,6 +6,7 @@ from langchain_core.messages import HumanMessage
 
 from app.agents.graph import compiled_graph
 from app.schemas.chat import AgentTrace, ChatRequest, ChatResponse, ChatSnapshot
+from app.services.chat_layers import split_answer_layers
 from app.store import get_thread, save_thread
 
 router = APIRouter(prefix="/api")
@@ -63,16 +64,19 @@ async def post_chat(body: ChatRequest) -> ChatResponse:
         "assumptions": [],
     }
     result = await compiled_graph.ainvoke(initial)
+    answer = result.get("answer") or ""
+    layers = split_answer_layers(answer)
     trace = AgentTrace.model_validate(result.get("trace") or {})
     snapshot = ChatSnapshot(
         thread_id=thread_id,
-        answer=result.get("answer") or "",
+        answer=answer,
+        layers=layers,
         trace=trace,
         state=_serialize_state(result),
         route=result.get("route") or "",
     )
     save_thread(thread_id, snapshot.model_dump())
-    return ChatResponse(thread_id=thread_id, answer=snapshot.answer, trace=trace)
+    return ChatResponse(thread_id=thread_id, answer=snapshot.answer, layers=layers, trace=trace)
 
 
 @router.get("/chat/{thread_id}", response_model=ChatSnapshot)

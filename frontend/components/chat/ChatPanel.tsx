@@ -49,7 +49,7 @@ export function ChatPanel({ year, meetingKey }: ChatPanelProps) {
       setThreadId(response.thread_id);
       setMessages((current) => [
         ...current,
-        { role: "assistant", content: response.answer, trace: response.trace },
+        { role: "assistant", content: response.answer, layers: response.layers, trace: response.trace },
       ]);
     } catch (error) {
       const failed = error instanceof ChatApiError ? error : null;
@@ -60,6 +60,7 @@ export function ChatPanel({ year, meetingKey }: ChatPanelProps) {
         {
           role: "assistant",
           content: answer || "The graph did not complete.",
+          layers: failed?.payload?.layers,
           trace,
           error: failed ? `HTTP ${failed.status}` : "Network error",
         },

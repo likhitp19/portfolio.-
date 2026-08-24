@@ -4,6 +4,7 @@ from app.config import settings
 from app.integrations.search import SearchClient
 from app.runtime import set_client, set_fact_store, set_search_client
 from app.services.dashboard import clear_dashboard_cache
+from app.services.analytics import clear_analytics_cache
 from app.services.fact_store import FactStore
 from tests.fakes import FakeOpenF1Client
 
@@ -28,6 +29,7 @@ def fake_openf1():
 @pytest.fixture(autouse=True)
 def fact_backend():
     clear_dashboard_cache()
+    clear_analytics_cache()
     store = FactStore(":memory:")
     search = SearchClient()
     set_fact_store(store)
