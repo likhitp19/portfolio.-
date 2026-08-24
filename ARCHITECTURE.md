@@ -50,7 +50,7 @@ There is **no Chronological Event Timeline**.
 | **Constructor** | `championship_teams` | Manufacturer tab **points** |
 | **Team finance** | Fact store (search-backed) | Valuation, published cap, cost-per-point |
 | **Win tally** | Session results `position == 1` | Average / total wins per manufacturer |
-| **Driver** | `championship_drivers` | Top 5 + FIFA cards |
+| **Driver** | `championship_drivers` | Top 5 + F1 DAM portraits |
 | **Driver finance** | Fact store (search-backed salary) | Financial efficiency rating |
 | **Insights** | `session_result`, `laps` | Fastest lap, DNFs, top-3 finishes |
 
@@ -189,7 +189,7 @@ Layout (top → bottom):
 ### 3.5 Driver tab (gamified ROI)
 
 1. **`DriverRoiGrid`** — up to **five** `DriverCard`s (championship order).
-   - Header: `Avatar` placeholder + `Badge` P1–P5.
+   - Header: official F1 DAM headshot (`driverHeadshotFallbacks`) + `Badge` P1–P5.
    - Body: name, team, **points**, **estimated salary**, **FER** (salary/points) as large number + `Badge` band (e.g. FER &lt; $200k/pt “High ROI”).
    - `HoverCard`: FER formula **and** salary citation from the fact store.
 2. **`PointsProgressionChart`** — **exactly five** Recharts `Line` series. X = circuit short name (completed races); Y = cumulative points. Tooltip: driver, pts after that GP.
@@ -202,16 +202,13 @@ Layout (top → bottom):
 
 ### 3.7 Chat (Phase 5)
 
-`POST /api/chat` → `{ thread_id, answer, trace }`. **Never** invent `trace` on the client.
+Interview layout: **dashboard (numbers + charts) above**, **Executive Co-Pilot below**. Default year **2026**.
 
-Chips (examples, business-weighted):
+`POST /api/chat` → `{ thread_id, answer, layers, trace }`. `POST /api/chat/stream` is SSE (`handoff` then `result`). **Never** invent `trace` on the client.
 
-- “Which constructor has the best cost-per-point this season?”
-- “Rank top 5 drivers by financial efficiency (salary per point).”
-- “If this circuit’s winner is the title favourite, what does the constructor table imply for valuation narratives?”
-- “Explain DNFs as operational risk after this meeting.”
+Starter (no generic chips): “Who is projected to win the Championship this year, and what does the data say?” Intent `championship_projection` loads sessions, standings, classifications, laps, and drivers; Strategic Analyst writes the TL;DR + tables.
 
-`TraceInspector`: `routing`, `reasoning_path`, `api_calls`, `pipelines`. Store reads → pipeline `finance_fact_store`. Live Tavily calls (rare) → `api_calls` tool `search_commercial` with query + result count. Never label a stored fact as an OpenF1 response.
+`AgentTracePanel` (collapsible): `agent_handoffs`, `reasoning_path`, `api_calls` (path, status, `duration_ms`). Store reads → `finance_fact_store`. Live Tavily → `search_commercial`. Never label a stored fact as OpenF1.
 
 ---
 
@@ -270,7 +267,8 @@ HTTP **503**. Other OpenF1 failures: **502**, `code: "OPENF1_UPSTREAM"`.
 
 | Method | Path | Body | Response |
 | --- | --- | --- | --- |
-| `POST` | `/api/chat` | `{ message, thread_id?, year?, meeting_key? }` | `{ thread_id, answer, trace }` |
+| `POST` | `/api/chat` | `{ message, thread_id?, year?, meeting_key? }` | `{ thread_id, answer, layers, trace }` |
+| `POST` | `/api/chat/stream` | same | SSE `handoff` / `result` |
 | `GET` | `/api/chat/{thread_id}` | — | Snapshot |
 
 ---
@@ -287,7 +285,7 @@ class F1DashboardState(TypedDict):
     season_year: int | None
     meeting_key: int | None
     circuit_name: str | None
-    intent: str   # constructor_finance | driver_roi | comparative_standings | meeting_insights | chitchat | ...
+    intent: str   # championship_projection | constructor_finance | driver_roi | ...
     route: str    # data_analyst | generalist_direct
     routing_rationale: str
     analysis_plan: list
@@ -308,13 +306,14 @@ No `timeline` intent. Commercial questions route to **data_analyst** (`get_finan
 START → generalist
           ├─ generalist_direct → technical_manager → END
           ├─ researcher ⇄ tools → technical_manager → END
-          └─ data_analyst ⇄ tools → technical_manager → END
+          └─ data_analyst ⇄ tools → strategic_analyst → technical_manager → END
 ```
 
-- **Generalist:** no OpenF1; binds `season_year` / `meeting_key`.
+- **Generalist:** no OpenF1; binds `season_year` / `meeting_key`. “This year” → calendar year **2026**.
 - **Data Analyst:** OpenF1 + fact store; loops while `needs_more_data`.
+- **Strategic Analyst:** championship projection from retrieved payloads (pace, DNFs, remaining calendar, teammate cushion).
 - **Researcher:** web search (Tavily), cite, write store; then read store. No invented dollars.
-- **Technical Manager:** never fetches; emits `routing`, `reasoning_path`, `execution_trace`, `api_calls`, `pipelines`, `missing_inputs`, `assumptions`.
+- **Technical Manager:** never fetches; emits `routing`, `reasoning_path`, `execution_trace`, `api_calls`, `pipelines`, `agent_handoffs`.
 
 Scoring and the eight interview tests: [EVALUATION.md](./EVALUATION.md).
 
@@ -326,7 +325,7 @@ Scoring and the eight interview tests: [EVALUATION.md](./EVALUATION.md).
 2. Manufacturer tab: constructor points + labeled financials + CPP chart.
 3. Driver tab: five FIFA cards + five-line progression.
 4. Summary: leader KPIs + insights (no timeline).
-5. Chat: same context; Generalist routes; Analyst may mix OpenF1 + estimates; UI shows **server** `trace`.
+5. Co-Pilot under the ledger; title questions hit live sport APIs; UI shows **server** `layers` + `trace`.
 
 ---
 

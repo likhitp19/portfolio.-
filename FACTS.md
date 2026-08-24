@@ -87,7 +87,7 @@ Expect `supabase` and a count around 40+ after the first successful attach. Then
 
 ## Driver photos and team logos
 
-Driver cards load F1 CDN headshots from `frontend/lib/media.ts`. If the CDN 404s, initials stay. Manufacturer names show team logos (2025 → 2024 → 2023 slug fallback).
+Driver cards load F1 Cloudinary DAM portraits from `frontend/lib/media.ts` (`2026Drivers` → `2025Drivers` → `2024Drivers` by last name). If the DAM 404s, `MediaAvatar` tries the next URL then initials. Constructor logos try `{slug}-logo.png` 2026–2023, then 2018 `.jpg`. Teammate list cards use the same logo chain.
 
 ---
 

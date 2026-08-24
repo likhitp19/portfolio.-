@@ -36,9 +36,10 @@ This is **not** a live timing app and **not** a chronological race-control timel
 
 - **All Circuits** season view vs **one GP** (`meeting_key`). Changing the circuit **must** navigate and **re-fetch** `/api/dashboard` so no widget keeps the previous meeting.
 - **Manufacturer (business view):** constructor points + **cited commercial facts** (valuations, FIA budget cap, cost-per-point, wins per manufacturer). OpenF1 has **no** team value or salary fields — those come from a **search API + persistent fact store**, not invented mocks on each request.
-- **Driver (gamified ROI):** top **5** championship progression; **FIFA-style driver cards** (headshot placeholder, **stored** estimated salary with source, points, **financial efficiency** = salary / points).
+- **Driver (gamified ROI):** top **5** championship cards with official F1 DAM **headshots**, stored salary estimates, points, **FER** = salary / points. Teammate matrix cards show **constructor logos**.
 - **Overall Summary:** leader, gap to P2, races completed; **business insights grid** (fastest lap, total DNFs, top-3 finishes). **No event timeline.**
-- **Agent chat:** Generalist → Data Analyst ⇄ tools (OpenF1 **and** `search_commercial` / fact-store reads) → Technical Manager. Client **never invents** `trace`.
+- **Interview page flow:** **analytics first** (KPIs, cost-per-point, constructor book, era/yield charts), **Executive Co-Pilot below**. Default season is **2026** (`/` and `/season/2025` redirect there).
+- **Agent chat:** Generalist → Data Analyst ⇄ OpenF1 tools → Strategic Analyst (title projection) → Technical Manager. `POST /api/chat/stream` emits agent handoffs. Client **never invents** `trace`. Championship starter: *Who is projected to win the Championship this year, and what does the data say?*
 
 ### Data policy
 
@@ -57,12 +58,12 @@ Next.js **is** the React site. **Production:** Vercel (UI) + Railway (API). See 
 | Layer | Choice | Why |
 | --- | --- | --- |
 | Frontend | **Next.js** App Router | Season/circuit in the URL; dashboard loads from the browser against FastAPI |
-| UI | **Tailwind** + **Shadcn** (`Card`, `Badge`, `Tabs`, `HoverCard`, `Table`, `Alert`) | Premium dark console; FIFA-style cards; hover for valuation footnotes |
+| UI | **Tailwind** + **Shadcn** (`Card`, `Badge`, `Tabs`, `HoverCard`, `Table`, `Alert`) | Premium dark console; driver ROI cards with DAM portraits; hover for valuation footnotes |
 | Charts | **Recharts** | Cost-per-point bars; top-5 points progression; custom tooltips (USD + pts) |
 | Backend | **FastAPI** | Dashboard aggregate (no LLM) + `POST /api/chat` |
 | Sporting data | **OpenF1 v1** | Meetings, sessions, championship, results, laps — completed sessions only |
 | Commercial facts | **Search API** (Tavily, pluggable) + **SQLite and optional Supabase** | Valuations, cap headlines, salaries — cited, cached, historical years frozen |
-| Agents | **LangGraph** | Role-separated: Generalist (route), Data Analyst (tools), Technical Manager (trace only) |
+| Agents | **LangGraph** | Generalist → Data Analyst ⇄ tools → Strategic Analyst (title fight) → Technical Manager |
 
 ```
 .
@@ -106,7 +107,7 @@ cp .env.local.example .env.local   # API_INTERNAL_URL=http://127.0.0.1:8000
 npm run dev
 ```
 
-- App: `http://127.0.0.1:3000` (home redirects to the last **completed** season, typically **2025**)
+- App: `http://127.0.0.1:3000` → **`/season/2026`**. Season dropdown still covers the rolling window.
 
 Backend tests: `cd backend && source .venv/bin/activate && pytest -q`.
 
@@ -119,18 +120,7 @@ git push origin main           # git@github.com:likhitp19/portfolio.-.git
 
 Vercel (root `frontend`) and Railway (repo-root Docker) redeploy from `main`. Do not Publish the parent `projects/` folder.
 
-Chat chips: 2024 FER ranking, McLaren vs Ferrari 2023 CPP, FIA cost cap. If Tavily 403s, the researcher uses the fact store + `MOCK_FINANCIAL_DATA` and the Technical Manager tape records the sandbox notice.
-
-### Publish this repo
-
-```bash
-cd /path/to/interview          # nested git repo — not ~/Documents/projects
-git push origin main           # git@github.com:likhitp19/portfolio.-.git
-```
-
-Then Vercel (root `frontend`) and Railway (repo-root Docker) redeploy from `main`. Do not run VS Code Publish on the parent `projects/` folder.
-
-Chat chips (above the input): 2024 FER ranking, McLaren vs Ferrari 2023 CPP, FIA cost cap. If Tavily returns 403/timeout, the researcher uses the fact store + `MOCK_FINANCIAL_DATA` and the Technical Manager tape records `[Notice: Sandbox restricted external search; resolved via internal benchmark store]`. Constructor **wins** come from paginated Jolpica results / WCC `wins`, not a single Ergast page.
+**Demo chat:** one starter (“Who is projected to win the Championship this year…”) plus follow-ups after the report. “This year” is **2026**. Title answers come from live OpenF1/Jolpica standings, race classifications, and F1 DAM portraits — not a cached paragraph. If Tavily 403s/timeouts, the researcher uses the fact store + `MOCK_FINANCIAL_DATA`; the Technical Manager tape records the sandbox notice. Constructor **wins** come from paginated Jolpica / WCC `wins`.
 
 ---
 
@@ -143,7 +133,7 @@ Chat chips (above the input): 2024 FER ranking, McLaren vs Ferrari 2023 CPP, FIA
 | `OPENF1_ACCESS_TOKEN` | backend | Optional Bearer. |
 | `TAVILY_API_KEY` | backend | Commercial search (Phase 2). Not used on dashboard GET. |
 | `SUPABASE_URL` / `SUPABASE_ANON_KEY` | backend | Durable facts. Run `backend/app/data/commercial_facts.sql` once, then restart API. |
-| `DASHBOARD_PRELOAD` | backend | Default true. Warms 2024/2025 dashboard cache on boot. |
+| `DASHBOARD_PRELOAD` | backend | Default true. Warms 2024/2025/2026 dashboard cache on boot. |
 | `JOLPICA_BASE_URL` | backend | Default `https://api.jolpi.ca/ergast/f1` for pre-OpenF1 seasons. |
 | `DEEPSEEK_API_KEY` | backend | Optional. [DeepSeek API](https://api-docs.deepseek.com/). Heuristics work if empty. |
 | `LLM_BASE_URL` | backend | Default `https://api.deepseek.com` |

@@ -15,7 +15,9 @@ import {
 } from "recharts";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { TeamLogo } from "@/components/dashboard/MediaAvatar";
 import { fetchTeammateDelta, formatApiError } from "@/lib/api";
+import { constructorLogoFallbacks } from "@/lib/media";
 import type { TeammateDeltaMatrix, TeammateDeltaRow } from "@/lib/types";
 
 const TEAM_COLORS: Record<string, string> = {
@@ -159,12 +161,15 @@ export function TeammateDeltaMatrix({ year }: { year: number }) {
         {data?.rows.length ? (
           <ul className="grid gap-2 text-xs sm:grid-cols-2">
             {data.rows.map((row) => (
-              <li key={row.constructor_id} className="border border-[#2A2A2A] bg-[#0A0A0A] px-3 py-2">
-                <span className="font-medium">{row.team_name}</span>
-                <span className="ml-2 font-mono text-muted-foreground">{row.quadrant.replace(/_/g, " ")}</span>
-                <p className="mt-1 text-muted-foreground">
-                  {row.driver_a_name} vs {row.driver_b_name} · {row.dominant_share_pct}% yield concentration
-                </p>
+              <li key={row.constructor_id} className="flex items-start gap-3 border border-[#2A2A2A] bg-[#0A0A0A] px-3 py-2">
+                <TeamLogo urls={constructorLogoFallbacks(row.team_name)} alt={row.team_name} />
+                <div className="min-w-0">
+                  <span className="font-medium">{row.team_name}</span>
+                  <span className="ml-2 font-mono text-muted-foreground">{row.quadrant.replace(/_/g, " ")}</span>
+                  <p className="mt-1 text-muted-foreground">
+                    {row.driver_a_name} vs {row.driver_b_name} · {row.dominant_share_pct}% yield concentration
+                  </p>
+                </div>
               </li>
             ))}
           </ul>

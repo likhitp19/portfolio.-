@@ -3,15 +3,18 @@
 import { useState } from "react";
 
 type AvatarProps = {
-  src: string | null;
+  src?: string | null;
+  urls?: string[];
   alt: string;
   fallback: string;
   className?: string;
 };
 
-export function MediaAvatar({ src, alt, fallback, className }: AvatarProps) {
-  const [failed, setFailed] = useState(false);
-  if (!src || failed) {
+export function MediaAvatar({ src, urls, alt, fallback, className }: AvatarProps) {
+  const chain = (urls && urls.length ? urls : src ? [src] : []).filter(Boolean) as string[];
+  const [index, setIndex] = useState(0);
+  const current = chain[index];
+  if (!current) {
     return (
       <div
         className={
@@ -25,13 +28,13 @@ export function MediaAvatar({ src, alt, fallback, className }: AvatarProps) {
   }
   return (
     <img
-      src={src}
+      src={current}
       alt={alt}
       className={
         className ??
         "h-14 w-14 rounded-full border border-border object-cover object-top bg-secondary"
       }
-      onError={() => setFailed(true)}
+      onError={() => setIndex((value) => value + 1)}
     />
   );
 }
@@ -51,7 +54,7 @@ export function TeamLogo({ urls, alt }: LogoProps) {
     <img
       src={src}
       alt={alt}
-      className="h-6 w-6 object-contain"
+      className="h-7 w-7 shrink-0 object-contain"
       onError={() => setIndex((current) => current + 1)}
     />
   );

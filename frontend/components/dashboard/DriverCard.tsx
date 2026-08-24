@@ -3,7 +3,7 @@ import { MediaAvatar } from "@/components/dashboard/MediaAvatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatUsd } from "@/lib/formatMoney";
-import { driverHeadshotUrl } from "@/lib/media";
+import { driverHeadshotFallbacks } from "@/lib/media";
 import type { DriverStanding } from "@/lib/types";
 
 function initials(name: string): string {
@@ -36,7 +36,7 @@ export function DriverCard({ row, maxPoints = 0 }: { row: DriverStanding; maxPoi
       <CardContent className="pt-4">
         <div className="flex items-start justify-between gap-3">
           <MediaAvatar
-            src={driverHeadshotUrl(row.full_name)}
+            urls={driverHeadshotFallbacks(row.full_name)}
             alt={row.full_name}
             fallback={initials(row.full_name)}
           />

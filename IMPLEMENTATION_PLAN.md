@@ -6,7 +6,7 @@ Aligned with [README.md](./README.md) and [ARCHITECTURE.md](./ARCHITECTURE.md).
 
 **Target:** business F1 console (valuations, ROI, insights) + LangGraph trace. **≥10 seasons** in the nav. Sporting live-lock: **`F1_LIVE_LOCK`**. Facts: search → **Supabase** (SQLite fallback). Ship: **Railway** (API + Next.js/React). **No timeline.**
 
-**Status:** Phase 5 **complete** (deal-room chat, chips, server trace).
+**Status:** Phase 5 **complete**. Interview layout is ledger then Co-Pilot; championship starter + SSE handoffs (not generic chips).
 
 Each phase below is a **discrete Git commit**. Do not mix manufacturer finance into Phase 1, or LangGraph into Phase 3.
 

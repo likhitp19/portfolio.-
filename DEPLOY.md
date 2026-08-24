@@ -66,9 +66,9 @@ Two Railway services from one repo:
 
 ## 5. Smoke after deploy
 
-1. Open the Vercel URL → season dashboard fills in (may take ~15–45s).
-2. Chip **McLaren vs Ferrari CPP** → finance answer + source tag.
-3. Chip **FIA cost cap** → generalist regulation text (no OpenF1).
+1. Open `/` → **2026** season ledger (KPIs, CPP chart, constructor book) then co-pilot (~15–45s for dashboard).
+2. Starter **Who is projected to win the Championship this year…** → layered report + trace (may take a minute on first OpenF1 calendar call).
+3. Finance still works if you type e.g. “best cost-per-point in 2024”.
 4. `GET /health` on Railway → `status: ok`. After Supabase is wired, `facts_backend` is `supabase` and `facts_count` is ~40+.
 5. Manufacturer **Race wins** should track the season (not a handful of GPs from one Ergast page).
 

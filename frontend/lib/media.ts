@@ -1,80 +1,98 @@
 "use client";
 
 function key(value: string): string {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
 }
 
-/** OpenF1 / F1 DAM driver folder codes. Fallback: initials if the CDN 404s. */
-const DRIVER_CODES: Record<string, string> = {
-  "max verstappen": "MAXVER01",
-  "lando norris": "LANNOR01",
-  "oscar piastri": "OSCPIA01",
-  "charles leclerc": "CHALEC01",
-  "lewis hamilton": "LEWHAM01",
-  "george russell": "GEORUS01",
-  "carlos sainz": "CARSAI01",
-  "sergio perez": "SERPER01",
-  "fernando alonso": "FERALO01",
-  "lance stroll": "LANSTR01",
-  "pierre gasly": "PIEGAS01",
-  "esteban ocon": "ESTOCO01",
-  "alex albon": "ALEALB01",
-  "alexander albon": "ALEALB01",
-  "yuki tsunoda": "YUKTSU01",
-  "daniel ricciardo": "DANRIC01",
-  "nico hulkenberg": "NICHUL01",
-  "nico hülkenberg": "NICHUL01",
-  "kevin magnussen": "KEVMAG01",
-  "valtteri bottas": "VALBOT01",
-  "zhou guanyu": "GUAZHO01",
-  "guanyu zhou": "GUAZHO01",
-  "logan sargeant": "LOGSAR01",
-  "oliver bearman": "OLIBEA01",
-  "franco colapinto": "FRACOL01",
-  "liam lawson": "LIALAW01",
-  "jack doohan": "JACDOO01",
-  "andrea kimi antonelli": "ANDANT01",
-  "kimi antonelli": "ANDANT01",
-  "gabriel bortoleto": "GABBOR01",
-  "isack hadjar": "ISAHAD01",
-  "oliver googan": "OLIGOO01",
+/** Official F1 DAM last-name slugs for 2025/2026Drivers portraits. */
+const DRIVER_SLUG: Record<string, string> = {
+  "max verstappen": "verstappen",
+  "lando norris": "norris",
+  "oscar piastri": "piastri",
+  "charles leclerc": "leclerc",
+  "lewis hamilton": "hamilton",
+  "george russell": "russell",
+  "carlos sainz": "sainz",
+  "sergio perez": "perez",
+  "fernando alonso": "alonso",
+  "lance stroll": "stroll",
+  "pierre gasly": "gasly",
+  "esteban ocon": "ocon",
+  "alex albon": "albon",
+  "alexander albon": "albon",
+  "yuki tsunoda": "tsunoda",
+  "nico hulkenberg": "hulkenberg",
+  "kevin magnussen": "magnussen",
+  "valtteri bottas": "bottas",
+  "oliver bearman": "bearman",
+  "franco colapinto": "colapinto",
+  "liam lawson": "lawson",
+  "andrea kimi antonelli": "antonelli",
+  "kimi antonelli": "antonelli",
+  "gabriel bortoleto": "bortoleto",
+  "isack hadjar": "hadjar",
+  "arvid lindblad": "lindblad",
 };
 
 const TEAM_LOGO_SLUG: Record<string, string> = {
   mclaren: "mclaren",
   ferrari: "ferrari",
   "red bull racing": "red-bull-racing",
+  "red bull": "red-bull-racing",
   mercedes: "mercedes",
   "aston martin": "aston-martin",
   alpine: "alpine",
+  "alpine f1 team": "alpine",
   williams: "williams",
   haas: "haas",
+  "haas f1 team": "haas",
   rb: "racing-bulls",
+  "rb f1 team": "racing-bulls",
   "racing bulls": "racing-bulls",
   sauber: "kick-sauber",
   "kick sauber": "kick-sauber",
+  audi: "kick-sauber",
+  "audi f1": "kick-sauber",
+  cadillac: "cadillac",
+  "cadillac f1 team": "cadillac",
 };
 
-export function driverHeadshotUrl(fullName: string, year = 2025): string | null {
-  const code = DRIVER_CODES[key(fullName)];
-  if (!code) {
-    return null;
+function portraitUrl(folder: string, slug: string): string {
+  return `https://media.formula1.com/image/upload/f_auto,c_limit,q_auto,w_240/content/dam/fom-website/drivers/${folder}/${slug}`;
+}
+
+export function driverHeadshotFallbacks(fullName: string): string[] {
+  const slug = DRIVER_SLUG[key(fullName)] || key(fullName).split(" ").pop() || "";
+  if (!slug) {
+    return [];
   }
-  const letter = code[0];
-  return `https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/${letter}/${code}/${code.toLowerCase()}.png.transform/1col/image.png`;
+  return ["2026Drivers", "2025Drivers", "2024Drivers"].map((folder) => portraitUrl(folder, slug));
+}
+
+export function driverHeadshotUrl(fullName: string, _year = 2026): string | null {
+  return driverHeadshotFallbacks(fullName)[0] ?? null;
+}
+
+function teamSlug(teamName: string): string | undefined {
+  const k = key(teamName);
+  if (TEAM_LOGO_SLUG[k]) {
+    return TEAM_LOGO_SLUG[k];
+  }
+  for (const [alias, value] of Object.entries(TEAM_LOGO_SLUG)) {
+    if (k.includes(alias) || alias.includes(k)) {
+      return value;
+    }
+  }
+  return undefined;
 }
 
 export function constructorLogoUrl(teamName: string, year = 2025): string | null {
-  const k = key(teamName);
-  let slug: string | undefined = TEAM_LOGO_SLUG[k];
-  if (!slug) {
-    for (const [alias, value] of Object.entries(TEAM_LOGO_SLUG)) {
-      if (k.includes(alias) || alias.includes(k)) {
-        slug = value;
-        break;
-      }
-    }
-  }
+  const slug = teamSlug(teamName);
   if (!slug) {
     return null;
   }
@@ -82,8 +100,24 @@ export function constructorLogoUrl(teamName: string, year = 2025): string | null
 }
 
 export function constructorLogoFallbacks(teamName: string): string[] {
-  const years = [2025, 2024, 2023];
-  return years
-    .map((year) => constructorLogoUrl(teamName, year))
-    .filter((url): url is string => Boolean(url));
+  const slug = teamSlug(teamName);
+  if (!slug) {
+    return [];
+  }
+  const years = [2026, 2025, 2024, 2023];
+  const urls = years.map((year) => `https://media.formula1.com/content/dam/fom-website/teams/${year}/${slug}-logo.png`);
+  urls.push(
+    `https://media.formula1.com/image/upload/c_lfill,w_80/q_auto/content/dam/fom-website/2018-redesign-assets/team%20logos/${slug}.jpg`,
+  );
+  if (slug === "kick-sauber") {
+    urls.push(
+      "https://media.formula1.com/image/upload/c_lfill,w_80/q_auto/content/dam/fom-website/2018-redesign-assets/team%20logos/kick%20sauber.jpg",
+    );
+  }
+  if (slug === "cadillac") {
+    urls.push(
+      "https://media.formula1.com/content/dam/fom-website/teams/2025/williams-logo.png",
+    );
+  }
+  return urls;
 }
