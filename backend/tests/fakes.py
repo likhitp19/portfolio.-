@@ -98,8 +98,72 @@ class FakeOpenF1Client:
             }
         ]
         self.laps = [
-            {"session_key": 101, "driver_number": 1, "lap_number": 10, "lap_duration": 93.4},
-            {"session_key": 201, "driver_number": 4, "lap_number": 12, "lap_duration": 91.2},
+            {
+                "session_key": 101,
+                "driver_number": 1,
+                "lap_number": 10,
+                "lap_duration": 93.4,
+                "date_start": "2024-03-02T15:20:00+00:00",
+            },
+            {
+                "session_key": 201,
+                "driver_number": 4,
+                "lap_number": 12,
+                "lap_duration": 91.2,
+                "date_start": "2024-03-09T18:20:00+00:00",
+            },
+            {
+                "session_key": 101,
+                "driver_number": 63,
+                "lap_number": 18,
+                "lap_duration": 94.1,
+                "date_start": "2024-03-02T15:40:00+00:00",
+            },
+            {
+                "session_key": 101,
+                "driver_number": 44,
+                "lap_number": 18,
+                "lap_duration": 94.4,
+                "date_start": "2024-03-02T15:40:02+00:00",
+            },
+        ]
+        self.car_data = [
+            {
+                "session_key": 101,
+                "driver_number": 63,
+                "date": "2024-03-02T15:40:01+00:00",
+                "speed": 298,
+                "brake": 0,
+                "n_throttle": 99,
+            },
+            {
+                "session_key": 101,
+                "driver_number": 63,
+                "date": "2024-03-02T15:40:04+00:00",
+                "speed": 118,
+                "brake": 86,
+                "n_throttle": 4,
+            },
+            {
+                "session_key": 101,
+                "driver_number": 44,
+                "date": "2024-03-02T15:40:03+00:00",
+                "speed": 292,
+                "brake": 0,
+                "n_throttle": 97,
+            },
+            {
+                "session_key": 101,
+                "driver_number": 44,
+                "date": "2024-03-02T15:40:06+00:00",
+                "speed": 141,
+                "brake": 42,
+                "n_throttle": 22,
+            },
+        ]
+        self.locations = [
+            {"session_key": 101, "driver_number": 63, "date": "2024-03-02T15:40:01+00:00", "x": 100, "y": 20, "z": 0},
+            {"session_key": 101, "driver_number": 44, "date": "2024-03-02T15:40:03+00:00", "x": 108, "y": 28, "z": 0},
         ]
         self.session_results = [
             {"session_key": 101, "driver_number": 1, "position": 1, "dnf": False, "team_name": "Red Bull Racing"},
@@ -123,6 +187,8 @@ class FakeOpenF1Client:
         out = rows
         for key, value in params.items():
             if value is None:
+                continue
+            if any(token in key for token in (">", "<")):
                 continue
             out = [row for row in out if row.get(key) == value or str(row.get(key)) == str(value)]
         return out
@@ -194,6 +260,14 @@ class FakeOpenF1Client:
     async def get_weather(self, **params: Any) -> List[Dict[str, Any]]:
         self._record("get_weather", **params)
         return []
+
+    async def get_car_data(self, **params: Any) -> List[Dict[str, Any]]:
+        self._record("get_car_data", **params)
+        return self._filter(self.car_data, **params)
+
+    async def get_location(self, **params: Any) -> List[Dict[str, Any]]:
+        self._record("get_location", **params)
+        return self._filter(self.locations, **params)
 
     async def aclose(self) -> None:
         return None

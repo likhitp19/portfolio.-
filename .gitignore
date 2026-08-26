@@ -20,6 +20,8 @@ next-env.d.ts
 # Data
 backend/data/*.sqlite
 backend/data/*.sqlite-journal
+backend/data/chroma_fia/
+backend/data/steward_frames/
 
 # Env (keep *.example)
 .env

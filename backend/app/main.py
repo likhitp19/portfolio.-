@@ -7,6 +7,7 @@ from app.config import settings
 from app.integrations.openf1 import OpenF1Client
 from app.routers.chat import router as chat_router
 from app.routers.dashboard import router as dashboard_router
+from app.routers.steward import router as steward_router
 from app.runtime import get_client, set_client, set_fact_store
 from app.services.dashboard import dashboard_overview
 from app.services.fact_store import FactStore
@@ -43,7 +44,7 @@ async def lifespan(app: FastAPI):
         await client.aclose()
 
 
-app = FastAPI(title="F1 Dashboard API", version="0.3.0", lifespan=lifespan)
+app = FastAPI(title="F1 Dashboard API", version="0.4.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -56,6 +57,7 @@ app.add_middleware(
 
 app.include_router(dashboard_router)
 app.include_router(chat_router)
+app.include_router(steward_router)
 
 
 @app.get("/health")

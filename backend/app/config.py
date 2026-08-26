@@ -26,6 +26,33 @@ class Settings(BaseSettings):
     dashboard_preload: bool = True
     jolpica_base_url: str = "https://api.jolpi.ca/ergast/f1"
     season_window_years: int = 10
+    openrouter_api_key: str = ""
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    steward_vision_model: str = "qwen/qwen2.5-vl-72b-instruct"
+    steward_reason_model: str = "deepseek/deepseek-r1"
+    chroma_persist_dir: str = "data/chroma_fia"
+    steward_use_chroma: bool = True
+    pinecone_api_key: str = ""
+    pinecone_index: str = "fia-sporting-regulations"
+    pinecone_namespace: str = "fia-sporting-2026"
+    pinecone_cloud: str = "aws"
+    pinecone_region: str = "us-east-1"
+    embedding_model: str = "openai/text-embedding-3-small"
+    fia_pdfs_dir: str = "app/data/pdfs"
+
+    @property
+    def pinecone_key(self) -> str:
+        raw = (self.pinecone_api_key or "").strip()
+        if len(raw) >= 2 and raw[0] == raw[-1] and raw[0] in {'"', "'"}:
+            raw = raw[1:-1].strip()
+        return raw
+
+    @property
+    def openrouter_key(self) -> str:
+        raw = (self.openrouter_api_key or "").strip()
+        if len(raw) >= 2 and raw[0] == raw[-1] and raw[0] in {'"', "'"}:
+            raw = raw[1:-1].strip()
+        return raw
 
     @property
     def cors_origin_list(self) -> list[str]:

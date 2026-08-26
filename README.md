@@ -135,10 +135,14 @@ Vercel (root `frontend`) and Railway (repo-root Docker) redeploy from `main`. Do
 | `SUPABASE_URL` / `SUPABASE_ANON_KEY` | backend | Durable facts. Run `backend/app/data/commercial_facts.sql` once, then restart API. |
 | `DASHBOARD_PRELOAD` | backend | Default true. Warms 2024/2025/2026 dashboard cache on boot. |
 | `JOLPICA_BASE_URL` | backend | Default `https://api.jolpi.ca/ergast/f1` for pre-OpenF1 seasons. |
-| `DEEPSEEK_API_KEY` | backend | Optional. [DeepSeek API](https://api-docs.deepseek.com/). Heuristics work if empty. |
+| `DEEPSEEK_API_KEY` | backend | Optional. [DeepSeek API](https://api-docs.deepseek.com/). Chat desk; heuristics work if empty. |
 | `LLM_BASE_URL` | backend | Default `https://api.deepseek.com` |
 | `LLM_MODEL` | backend | Default `deepseek-v4-flash` (or `deepseek-v4-pro`) |
 | `OPENAI_API_KEY` | backend | Fallback if `DEEPSEEK_API_KEY` is unset (same OpenAI SDK shape) |
+| `OPENROUTER_API_KEY` | backend | Optional. [OpenRouter](https://openrouter.ai/keys). Race Steward vision + verdict. Without it, steward uses hint + OpenF1 + heuristic verdict. |
+| `OPENROUTER_BASE_URL` | backend | Default `https://openrouter.ai/api/v1` |
+| `STEWARD_VISION_MODEL` | backend | Default `qwen/qwen2.5-vl-72b-instruct` |
+| `STEWARD_REASON_MODEL` | backend | Default `deepseek/deepseek-r1` |
 | `CORS_ORIGINS` | backend | Explicit origins, e.g. Vercel production URL |
 | `CORS_ORIGIN_REGEX` | backend | Default `https://.*\.vercel\.app` |
 | `API_INTERNAL_URL` | frontend | FastAPI origin for leftover same-origin rewrites |

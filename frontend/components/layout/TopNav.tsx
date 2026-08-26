@@ -27,6 +27,12 @@ export function TopNav({ year, years, meetings, meetingKey }: TopNavProps) {
           <Link href="/season/2026" className="shrink-0 text-lg font-black tracking-tighter text-[#E10600]">
             APEX ANALYTICS
           </Link>
+          <Link
+            href="/steward"
+            className="hidden text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground hover:text-foreground sm:inline"
+          >
+            Protest Engine
+          </Link>
           <Badge className="hidden rounded-sm border-[#2A2A2A] bg-transparent text-[10px] uppercase tracking-[0.16em] text-muted-foreground sm:inline-flex">
             Executive Pitwall
           </Badge>

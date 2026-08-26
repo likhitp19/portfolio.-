@@ -24,6 +24,8 @@ The UI does **not** load OpenF1 on the Vercel server. Nav, dashboard, and chat a
 | `CORS_ORIGINS` | `https://<your-app>.vercel.app` plus `http://localhost:3000` if you test locally against prod API |
 | `CORS_ORIGIN_REGEX` | Default `https://.*\.vercel\.app` covers previews. Keep it. |
 | `DEEPSEEK_API_KEY` | Chat routing; heuristics still work if empty |
+| `OPENROUTER_API_KEY` | Race Steward (Qwen-VL + DeepSeek-R1 via OpenRouter). Optional; without it steward uses hint + OpenF1 + heuristic verdict |
+| `STEWARD_VISION_MODEL` / `STEWARD_REASON_MODEL` | Defaults in `backend/.env.example` |
 | `TAVILY_API_KEY` | Only for “look up online” |
 | `SUPABASE_URL` / `SUPABASE_ANON_KEY` | Durable commercial facts. Create `commercial_facts` with `backend/app/data/commercial_facts.sql` first. |
 | `LLM_BASE_URL` / `LLM_MODEL` | Defaults in `backend/.env.example` |

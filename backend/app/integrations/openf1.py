@@ -169,3 +169,12 @@ class OpenF1Client:
 
     async def get_weather(self, **params: Any) -> List[Dict[str, Any]]:
         return await self._get("weather", **params)
+
+    async def get_car_data(self, **params: Any) -> List[Dict[str, Any]]:
+        return await self._get("car_data", **params)
+
+    async def get_location(self, **params: Any) -> List[Dict[str, Any]]:
+        return await self._get("location", **params)
+
+    async def get_team_radio(self, **params: Any) -> List[Dict[str, Any]]:
+        return await self._get("team_radio", **params)
