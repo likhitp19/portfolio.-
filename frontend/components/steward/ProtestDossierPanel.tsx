@@ -15,8 +15,8 @@ const STATUS_STYLES: Record<EvidenceStatus, string> = {
 
 const STATUS_LABEL: Record<EvidenceStatus, string> = {
   present: "Present",
-  pending_phase2: "Pending Phase 2 Ingestion",
-  insufficient: "Insufficient / Missing",
+  pending_phase2: "Pending Phase 2",
+  insufficient: "Insufficient",
 };
 
 const PROBABILITY_META: Record<

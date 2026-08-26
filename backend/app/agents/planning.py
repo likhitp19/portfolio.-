@@ -356,7 +356,6 @@ def heuristic_analyst_plan(state: F1DashboardState) -> Dict[str, Any]:
             if race.get("session_key"):
                 want("get_session_result", {"session_key": race.get("session_key")})
         if recent and recent[-1].get("session_key"):
-            want("get_laps", {"session_key": recent[-1].get("session_key")})
             want("get_drivers", {"session_key": recent[-1].get("session_key")})
     elif intent in {"comparative_standings", "unknown"}:
         if year:
@@ -600,14 +599,20 @@ def _synthesize(
             }
         )
         cap = DEFAULT_CAP_USD
+        cap_from_fact = False
         vals: Dict[str, float] = {}
         for fact in facts:
             metric = fact.get("metric")
             key = canonical_team(str(fact.get("entity_key") or ""))
             if metric == "budget_cap_usd" and fact.get("value_usd"):
                 cap = float(fact["value_usd"])
+                cap_from_fact = True
             if metric == "valuation_usd" and fact.get("value_usd"):
                 vals[key] = float(fact["value_usd"])
+        if not cap_from_fact:
+            assumptions.append(
+                "Used default USD {0:,.0f} cap; no cited budget_cap_usd fact was found for the requested year.".format(cap)
+            )
         ranked = []
         for team in teams:
             name = str(team.get("team_name") or "")
@@ -656,11 +661,6 @@ def _synthesize(
                 }
             )
             lines = []
-            lines.append(
-                "Metric: cost_per_point = cost_cap_usd / constructor_championship_points. "
-                "Inputs: Jolpica/OpenF1 constructor points + stored cap (default USD 135M). "
-                "Lower USD/pt is more efficient."
-            )
             if len(named) >= 2:
                 a, b = named[0], named[1]
                 winner = a if a[0] <= b[0] else b
@@ -692,6 +692,11 @@ def _synthesize(
                 for cpp, name, points, val in ranked[:5]:
                     extra = " valuation ~${0:,.0f}".format(val) if val else ""
                     lines.append("{0}: ${1:,.0f}/pt · {2:.0f} pts{3}.".format(name, cpp, points, extra))
+            lines.append(
+                "Metric: cost_per_point = cost_cap_usd / constructor_championship_points. "
+                "Inputs: Jolpica/OpenF1 constructor points + stored cap (default USD 135M). "
+                "Lower USD/pt is more efficient."
+            )
             lines.append("Dollars are cited fact-store estimates (or the USD 135M default cap), not audited club accounts.")
             if assumptions:
                 lines.append("Assumption: " + assumptions[0])

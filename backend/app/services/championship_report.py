@@ -21,8 +21,11 @@ def _all_result_rows(grouped: Dict[str, List[Dict[str, Any]]]) -> List[Dict[str,
     return rows
 
 
-def _driver_directory(grouped: Dict[str, List[Dict[str, Any]]]) -> Dict[str, str]:
+def _driver_directory(
+    grouped: Dict[str, List[Dict[str, Any]]],
+) -> Tuple[Dict[str, str], Dict[str, str]]:
     names: Dict[str, str] = {}
+    teams: Dict[str, str] = {}
     for tool in ("get_drivers", "get_championship_drivers", "get_session_result"):
         payloads = grouped.get(tool) or []
         for payload in payloads:
@@ -37,7 +40,12 @@ def _driver_directory(grouped: Dict[str, List[Dict[str, Any]]]) -> Dict[str, str
                 ).strip()
                 if key and label and not label.isdigit():
                     names[key] = label
-    return names
+                team = str(
+                    row.get("team_name") or row.get("constructor_name") or ""
+                ).strip()
+                if key and team and team != "—":
+                    teams[key] = team
+    return names, teams
 
 
 def _name(row: Dict[str, Any], names: Optional[Dict[str, str]] = None) -> str:
@@ -72,6 +80,7 @@ def _contenders(
     drivers: List[Dict[str, Any]],
     names: Dict[str, str],
     shots: Dict[str, str],
+    teams: Dict[str, str],
 ) -> List[Dict[str, Any]]:
     cards = []
     for index, row in enumerate(drivers[:4], start=1):
@@ -80,7 +89,7 @@ def _contenders(
             {
                 "driver_number": key,
                 "full_name": _name(row, names),
-                "team_name": _team(row),
+                "team_name": _team(row, teams),
                 "points": _pts(row),
                 "position": int(row.get("position_current") or row.get("position") or index),
                 "headshot_url": shots.get(key) or None,
@@ -97,7 +106,11 @@ def _pts(row: Dict[str, Any]) -> float:
         return 0.0
 
 
-def _team(row: Dict[str, Any]) -> str:
+def _team(row: Dict[str, Any], teams: Optional[Dict[str, str]] = None) -> str:
+    key = str(row.get("driver_number") or "")
+    mapped = (teams or {}).get(key)
+    if mapped:
+        return mapped
     return str(row.get("team_name") or row.get("constructor_name") or "—")
 
 
@@ -134,7 +147,12 @@ def _races_from_sessions(sessions: List[Dict[str, Any]], now: datetime) -> Tuple
     return completed, remaining
 
 
-def _form_table(results: List[Dict[str, Any]], drivers: List[Dict[str, Any]], names: Dict[str, str]) -> List[Dict[str, Any]]:
+def _form_table(
+    results: List[Dict[str, Any]],
+    drivers: List[Dict[str, Any]],
+    names: Dict[str, str],
+    teams: Dict[str, str],
+) -> List[Dict[str, Any]]:
     by_driver: Dict[str, List[int]] = {}
     wins: Dict[str, int] = {}
     dnfs: Dict[str, int] = {}
@@ -159,7 +177,7 @@ def _form_table(results: List[Dict[str, Any]], drivers: List[Dict[str, Any]], na
         ranked.append(
             {
                 "name": _name(row, names),
-                "team": _team(row),
+                "team": _team(row, teams),
                 "points": _pts(row),
                 "recent": ", ".join("P{0}".format(pos) if pos < 90 else "DNF" for pos in finishes[-5:]) or "—",
                 "wins": wins.get(key, 0),
@@ -196,16 +214,16 @@ def build_championship_report(
 ) -> Dict[str, Any]:
     now = now or datetime.now(timezone.utc)
     drivers = list(_rows(grouped, "get_championship_drivers"))
-    names = _driver_directory(grouped)
+    names, teams = _driver_directory(grouped)
     shots = _headshots(grouped)
     drivers.sort(key=lambda row: int(row.get("position_current") or row.get("position") or 99))
-    teams = list(_rows(grouped, "get_championship_teams"))
-    teams.sort(key=lambda row: int(row.get("position") or row.get("position_current") or 99))
+    constructors = list(_rows(grouped, "get_championship_teams"))
+    constructors.sort(key=lambda row: int(row.get("position") or row.get("position_current") or 99))
     sessions = _rows(grouped, "list_sessions")
     completed, remaining_sessions = _races_from_sessions(sessions, now)
     remaining_n = len(remaining_sessions) if sessions else DEFAULT_SEASON_RACES
     results = _all_result_rows(grouped)
-    form = _form_table(results, drivers, names)
+    form = _form_table(results, drivers, names, teams)
     leader = drivers[0] if drivers else {}
     second = drivers[1] if len(drivers) > 1 else {}
     leader_form = form[0] if form else {}
@@ -233,7 +251,7 @@ def build_championship_report(
     teammate_rows = []
     by_team: Dict[str, List[Dict[str, Any]]] = {}
     for row in drivers:
-        by_team.setdefault(_team(row), []).append(row)
+        by_team.setdefault(_team(row, teams), []).append(row)
     for team, members in by_team.items():
         if team == "—" or len(members) < 2:
             continue
@@ -288,7 +306,7 @@ def build_championship_report(
         "| Constructor | Pts | Position |",
         "| --- | --- | --- |",
     ]
-    for row in teams[:10]:
+    for row in constructors[:10]:
         constructor_md.append(
             "| {0} | {1:.0f} | {2} |".format(
                 row.get("team_name") or row.get("name") or "—",
@@ -347,7 +365,7 @@ def build_championship_report(
         "predicted_winner": winner,
         "confidence": confidence,
         "key_drivers": key_drivers[:2],
-        "contenders": _contenders(drivers, names, shots),
+        "contenders": _contenders(drivers, names, shots, teams),
         "follow_ups": follow_ups,
         "year": year,
         "remaining_races": remaining_n,

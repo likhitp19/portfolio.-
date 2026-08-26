@@ -2,15 +2,29 @@
 
 Contract aligned with [README.md](./README.md) and [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md).
 
-**Product north star (Phase 1 active):** a **Team Principal Protest & Review Engine**. The user acts as counsel for a constructor (e.g. Mercedes-AMG Petronas), ingests an on-track incident, gathers OpenF1 session context, retrieves **verbatim FIA Sporting Regulations** from a legal RAG index, and receives a structured **Protest Dossier** — not a fake Steward Decision.
-
-**Secondary product surface (shipped):** the Apex Analytics commercial desk (constructor economics, driver ROI, LangGraph Co-Pilot). That desk remains separate from the Protest graph.
+**Product north star:** a **Team Principal Protest & Review Engine**. The operator acts as counsel for a constructor (e.g. Mercedes-AMG Petronas), ingests an on-track incident, gathers OpenF1 session context, retrieves **verbatim FIA Sporting Regulations** from a legal RAG index, and receives a structured **Protest Dossier** — not a fake Steward Decision.
 
 **Disclaimer:** dossier output is a **portfolio simulation**. Citations must quote the indexed regulation text and page metadata; they are not an official FIA filing.
 
+**Secondary surface (shipped):** Apex Analytics commercial desk — separate compiled LangGraph from the Protest Engine.
+
 ---
 
-## 1. System context — Protest Engine
+## Active product focus — Phase 1 vs Phase 2 vs Phase 3
+
+| Phase | Name | Delivers |
+| --- | --- | --- |
+| **Phase 1** | **Pinecone RAG Setup & PDF Ingestion** | `backend/scripts/ingest_pdfs.py` (PyMuPDF) → `MarkdownHeaderTextSplitter` → Pinecone upsert with `page_number` + `source_document` metadata |
+| **Phase 2** | **LangGraph Updates (OpenF1 & Reasoning)** | OpenF1 `/v1/race_control` + `/v1/team_radio` tools; `verdict_reasoning_node` must emit **exact verbatim** quotes + page/source; `ProtestDossier` with `required_telemetry_evidence` when OpenF1 is coarse |
+| **Phase 3** | **Next.js Protest Dossier UI** | `/steward` Mercedes-AMG Petronas FIA Protest Dossier — RegulatoryCitation cards + evidence checklist badges |
+
+**Naming note:** Evidence status `pending_phase2` on a dossier item means *future high-frequency telemetry ingest*, **not** Implementation Phase 2 (LangGraph). See [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md).
+
+Do not start Phase *N*+1 code until Phase *N* docs and exit criteria are approved.
+
+---
+
+## 1. System Context — Protest Engine
 
 ```
 ┌──────────────────────────┐   /api/steward/*    ┌─────────────────────────────┐
@@ -37,22 +51,43 @@ Contract aligned with [README.md](./README.md) and [IMPLEMENTATION_PLAN.md](./IM
                                                           └──────────────────┘
 ```
 
+### PDF ingestion (Phase 1)
+
+Parse official FIA Sporting Regulations PDFs with **PyMuPDF** (`fitz`) and LangChain’s **`MarkdownHeaderTextSplitter`** (plus recursive Article / Chapter splits) to preserve legal clauses and page numbers. **No** fixed-size character windows. Sources live under `backend/app/data/pdfs/`.
+
+### Vector DB (Phase 1)
+
+Store embeddings in **Pinecone (Serverless Free Tier)** with strict metadata including:
+
+```json
+{
+  "source": "filename.pdf",
+  "source_document": "filename.pdf",
+  "page_number": 42,
+  "article": "Article 14"
+}
+```
+
+Hybrid retrieval: **semantic + BM25**. CI without `PINECONE_API_KEY` falls back to teaching Markdown / keyword.
+
+### OpenF1 context gathering (Phase 2)
+
+Before the reasoning node, the graph fetches `/v1/car_data`, `/v1/location`, plus official incident messages from **`/v1/race_control`** and driver-to-pit audio from **`/v1/team_radio`**.
+
+Frontend never calls OpenF1 or Pinecone directly. OpenF1 rules: TTL cache, ~3 req/s, **404 → `[]`**, never `session_key=latest`, live 401 → `F1_LIVE_LOCK` / degrade.
+
 | Concern | Choice |
 | --- | --- |
 | Legal corpus | Official FIA PDFs under `backend/app/data/pdfs/` |
-| PDF extract | **PyMuPDF** (`fitz`), optionally `pymupdf4llm` → Markdown |
-| Legal chunking | LangChain **`MarkdownHeaderTextSplitter`** (and/or recursive split on `Article` / `Chapter`) — **not** fixed-size character windows |
+| PDF extract | **PyMuPDF** (`fitz`), optionally `pymupdf4llm` |
+| Legal chunking | **`MarkdownHeaderTextSplitter`** + Article / Chapter |
 | Vector store | **Pinecone Serverless (Free Tier)** |
-| Chunk metadata | `{"source": "filename.pdf", "page_number": int, "article": "string"}` |
 | Reasoning model | `deepseek/deepseek-r1` via OpenRouter |
-| Vision (optional) | `qwen/qwen2.5-vl-72b-instruct` via OpenRouter (frames from MP4) |
-| Context APIs | OpenF1: telemetry + **`/race_control`** + **`/team_radio`** |
-
-Frontend never calls OpenF1 or Pinecone directly. OpenF1 client rules unchanged: TTL cache, ~3 req/s, **404 → `[]`**, never `session_key=latest`, live 401 → `F1_LIVE_LOCK` / graceful degrade on the Protest path.
+| Vision (optional) | `qwen/qwen2.5-vl-72b-instruct` via OpenRouter |
 
 ---
 
-## 2. Sequence — Phase 1 dossier generation
+## 2. Sequence — dossier generation (Phases 1–3)
 
 ```mermaid
 sequenceDiagram
@@ -108,52 +143,18 @@ flowchart TB
 
 ---
 
-## 4. PDF ingestion & legal chunking
+## 4. Counsel citation contract (Phase 2)
 
-1. Place official regulation PDFs in `backend/app/data/pdfs/`.
-2. Extract text **per page** with PyMuPDF so `page_number` is never lost.
-3. Convert page text (or full-doc Markdown via `pymupdf4llm`) and split with **`MarkdownHeaderTextSplitter`** and/or recursive separators such as `\nArticle`, `\nChapter`, `\nAppendix` so clauses are not bisected mid-sentence.
-4. Upsert into Pinecone with dense embeddings; enable hybrid retrieval (**semantic + BM25**) for article-number and keyword queries.
-5. Every vector must carry:
+**STRICT DIRECTIVE:** extract **EXACT verbatim quotes** from RAG chunk text. Include `page_number` and `source_document` from chunk metadata. **No paraphrasing.**
 
-```json
-{
-  "source": "FIA_2026_F1_Sporting_Regulations_Iss08.pdf",
-  "page_number": 42,
-  "article": "Article 14"
-}
-```
-
-**Strict citation rule for the counsel node:** when emitting `regulatory_violations`, use the **exact verbatim quote** from the retrieved chunk text and copy `page_number` / `source` from chunk metadata. Do not paraphrase rule text.
-
----
-
-## 5. OpenF1 context gathering (before reasoning)
-
-After vision / live-feed enrichment resolves `session_key` and involved drivers, the graph gathers:
-
-| Resource | Purpose |
-| --- | --- |
-| `/v1/car_data` | Speed, brake, throttle (coarse public samples) |
-| `/v1/location` | Spatial path samples |
-| `/v1/laps` | Lap time window bounds |
-| `/v1/race_control` | Official messages, flags, investigated / noted incidents |
-| `/v1/team_radio` | Driver ↔ pit audio metadata / transcripts when available |
-
-Whole-lap or low-Hz OpenF1 data is **not** treated as proof of understeer or contact. When evidence is coarse, the dossier sets `success_probability: Low` and lists **Phase 2** micro-telemetry requirements (steering angle, brake at apex, throttle delta, T-Cam sync).
-
----
-
-## 6. Protest Dossier contract
-
-Primary response field: `protest_dossier` on `POST /api/steward/analyze_clip` (+ `/upload`, `/stream`).
+When OpenF1 data is coarse or micro-telemetry is missing, populate `required_telemetry_evidence` (status often `pending_phase2` = future HF ingest).
 
 ```ts
 type RegulatoryCitation = {
   article_name: string;
-  exact_quote: string;      // verbatim from RAG chunk
-  page_number: number;      // from chunk metadata
-  source_document: string;  // from chunk metadata.source
+  exact_quote: string;
+  page_number: number;
+  source_document: string;
 };
 
 type ProtestDossier = {
@@ -177,42 +178,42 @@ type ProtestDossier = {
 };
 ```
 
-Legacy `verdict` summary fields may remain for compatibility; the UI renders the dossier.
-
-Phase 2 (future): `POST /api/steward/phase2/telemetry` accepts 10–100 Hz channels to satisfy `pending_phase2` items.
-
 ---
 
-## 7. Commercial desk (existing, unchanged topology)
-
-The Apex Analytics dashboard + chat Co-Pilot remain the business console:
-
-- Dashboard GET joins OpenF1 championship DTOs with the commercial **fact store** (Supabase / SQLite). No live search on page load.
-- LangGraph chat: Generalist → Data Analyst / Researcher ⇄ tools → Technical Manager.
-- `F1_LIVE_LOCK` on live-session OpenF1 401 for dashboard routes.
-
-Protest Engine and commercial chat use **separate compiled graphs**.
-
----
-
-## 8. Frontend surfaces
+## 5. Frontend (Phase 3)
 
 | Route | Role |
 | --- | --- |
-| `/season/{year}` … | Commercial desk |
-| `/steward` | Team Principal Protest Dossier — intake, coarse OpenF1 traces, pipeline lights (Ingest → OpenF1 → ISC RAG → Dossier), evidence checklist badges |
+| `/steward` | Mercedes-AMG Petronas FIA Protest Dossier — citation cards (quote + source + page badge), evidence checklist (Present / Pending Phase 2 / Insufficient), success probability |
 
 ---
 
-## 9. Environment
+## 6. Environment
 
 | Variable | Purpose |
 | --- | --- |
-| `OPENROUTER_API_KEY` | Vision + DeepSeek counsel |
-| `STEWARD_VISION_MODEL` / `STEWARD_REASON_MODEL` | Defaults Qwen-VL / DeepSeek-R1 |
-| `PINECONE_API_KEY` | Pinecone Serverless |
-| `PINECONE_INDEX` | FIA regulations index name |
-| `PINECONE_NAMESPACE` | Optional namespace (e.g. `fia-sporting-2026`) |
-| `OPENF1_*` | Same as commercial desk |
+| `PINECONE_API_KEY` | Phase 1 upsert / retrieve |
+| `PINECONE_INDEX` / `PINECONE_NAMESPACE` | Index targeting |
+| `OPENROUTER_API_KEY` | Vision + DeepSeek counsel (Phase 2) |
+| `STEWARD_VISION_MODEL` / `STEWARD_REASON_MODEL` | Model overrides |
+| `OPENF1_*` | Shared with commercial desk |
 
-Local fallback during CI: keyword / Chroma teaching corpus when Pinecone keys are absent — production Protest path targets Pinecone + official PDFs.
+---
+
+## 7. Path map (brief → this repo)
+
+| Brief | This repository |
+| --- | --- |
+| `backend/scripts/ingest_pdfs.py` | `backend/scripts/ingest_pdfs.py` |
+| `backend/services/rag_service.py` | `backend/app/services/rag_service.py` |
+| `backend/tools/openf1.py` | `backend/app/tools/openf1.py` |
+| `backend/api/steward.py` | `backend/app/routers/steward.py` |
+| `steward_graph.py` | `backend/app/agents/steward_graph.py` |
+| `app/steward/page.tsx` | `frontend/app/steward/page.tsx` |
+| `data/pdfs/` | `backend/app/data/pdfs/` |
+
+---
+
+## 8. Commercial desk (unchanged)
+
+Dashboard + chat Co-Pilot remain separate. `F1_LIVE_LOCK` applies to live OpenF1 401 on dashboard routes. Protest Engine must not invent commercial USD.

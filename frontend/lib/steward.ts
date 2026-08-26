@@ -54,6 +54,29 @@ export type ProtestDossier = {
   phase2_bridge: string;
 };
 
+/** Coerce legacy string citations into RegulatoryCitation objects for the dossier UI. */
+export function normalizeProtestDossier(raw: ProtestDossier | null | undefined): ProtestDossier | null {
+  if (!raw) return null;
+  const violations = ((raw.regulatory_violations || []) as unknown[]).map((item) => {
+    if (typeof item === "string") {
+      return {
+        article_name: item.slice(0, 120),
+        exact_quote: item,
+        page_number: 0,
+        source_document: "unknown",
+      } satisfies RegulatoryCitation;
+    }
+    const cite = (item || {}) as Partial<RegulatoryCitation>;
+    return {
+      article_name: cite.article_name || "",
+      exact_quote: cite.exact_quote || "",
+      page_number: Number(cite.page_number) || 0,
+      source_document: cite.source_document || "",
+    };
+  });
+  return { ...raw, regulatory_violations: violations };
+}
+
 export type LiveFeedContext = {
   session_type?: string;
   lap_number?: number;

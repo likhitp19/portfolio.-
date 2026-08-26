@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 
-import { Badge } from "@/components/ui/badge";
 import type { Meeting } from "@/lib/types";
 
 type TopNavProps = {
@@ -21,22 +20,11 @@ export function TopNav({ year, years, meetings, meetingKey }: TopNavProps) {
   const seasonYears = Array.from(new Set([...years, 2026, selectedYear])).sort((a, b) => b - a);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[#2A2A2A] bg-[#1A1A1A]">
-      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-6">
-        <div className="flex min-w-0 items-center gap-6">
-          <Link href="/season/2026" className="shrink-0 text-lg font-black tracking-tighter text-[#E10600]">
-            APEX ANALYTICS
-          </Link>
-          <Link
-            href="/steward"
-            className="hidden text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground hover:text-foreground sm:inline"
-          >
-            Protest Engine
-          </Link>
-          <Badge className="hidden rounded-sm border-[#2A2A2A] bg-transparent text-[10px] uppercase tracking-[0.16em] text-muted-foreground sm:inline-flex">
-            Executive Pitwall
-          </Badge>
-        </div>
+    <div className="border-b border-[#2A2A2A] bg-[#121212]/90">
+      <div className="mx-auto flex h-12 max-w-7xl items-center justify-between gap-4 px-6">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          Season controls
+        </p>
         <div className="flex flex-wrap items-center justify-end gap-3">
           <label className="text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
             Season
@@ -76,8 +64,14 @@ export function TopNav({ year, years, meetings, meetingKey }: TopNavProps) {
               ))}
             </select>
           </label>
+          <Link
+            href="/steward"
+            className="hidden text-[10px] font-medium uppercase tracking-[0.16em] text-[#C8A24A] hover:text-foreground sm:inline"
+          >
+            Open Regulatory Desk →
+          </Link>
         </div>
       </div>
-    </header>
+    </div>
   );
 }

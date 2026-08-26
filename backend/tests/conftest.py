@@ -15,6 +15,7 @@ def disable_live_llm(monkeypatch):
     monkeypatch.setattr(settings, "deepseek_api_key", "")
     monkeypatch.setattr(settings, "openai_api_key", "")
     monkeypatch.setattr(settings, "openrouter_api_key", "")
+    monkeypatch.setattr(settings, "pinecone_api_key", "")
     monkeypatch.setattr(settings, "steward_use_chroma", False)
     monkeypatch.setattr(settings, "dashboard_preload", False)
     monkeypatch.setattr(settings, "supabase_url", "")

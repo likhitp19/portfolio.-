@@ -28,19 +28,23 @@ EMPTY_VERDICT = {
     "penalty": "",
 }
 
-VISION_PROMPT = """You are a Formula 1 broadcast analyst. Watch the clip and extract a factual incident snapshot.
+VISION_PROMPT = """You are a Formula 1 broadcast analyst. Inspect still frames from an incident clip
+(onboard / world feed). Read on-screen TV graphics and telemetry overlays carefully.
 
 Return ONLY JSON with this exact shape:
 {{
+  "circuit": "Identified circuit name or Unknown",
   "session_type": "Race|Qualifying|Sprint|Practice|Unknown",
   "lap_number": 0,
   "involved_driver_numbers": [0],
-  "spatial_description": "one paragraph: who was inside/outside, braking, turn-in, contact, track limits"
+  "spatial_description": "one paragraph: positioning, apex lines, contact, racing room, braking / turn-in"
 }}
 
 Rules:
+- Prefer circuit / lap / car numbers visible on timing bugs, overlays, or cars.
 - Driver numbers must be integers from cars, timing overlays, or clearly readable race numbers.
-- If a field is unknown, use null for lap_number, [] for numbers, "Unknown" for session_type, and still write spatial_description from what is visible.
+- If a field is unknown, use null for lap_number, [] for numbers, "Unknown" for circuit/session_type,
+  and still write spatial_description from what is visible.
 - Do not decide a penalty. Do not invent championship context.
 Optional metadata from the operator: year={year}, circuit={circuit}, hint={hint}
 """
@@ -177,6 +181,9 @@ def _driver_numbers(value: Any) -> List[int]:
 
 def _normalize_vision(payload: Dict[str, Any], state: StewardState) -> Dict[str, Any]:
     session_type = str(payload.get("session_type") or "Unknown").strip() or "Unknown"
+    circuit = str(payload.get("circuit") or "").strip()
+    if not circuit or circuit.lower() in {"unknown", "none", "null"}:
+        circuit = str(state.get("circuit") or "").strip()
     lap_raw = payload.get("lap_number")
     try:
         lap_number = int(lap_raw) if lap_raw not in (None, "", 0, "0") else None
@@ -194,7 +201,42 @@ def _normalize_vision(payload: Dict[str, Any], state: StewardState) -> Dict[str,
         lap_match = re.search(r"\blap\s+(\d{1,3})\b", blob, flags=re.I)
         if lap_match:
             lap_number = int(lap_match.group(1))
+    if not circuit:
+        # Light circuit hint extraction from overlays / operator text.
+        for token in (
+            "spa",
+            "monza",
+            "monaco",
+            "silverstone",
+            "suzuka",
+            "bahrain",
+            "sakhir",
+            "jeddah",
+            "melbourne",
+            "imola",
+            "austin",
+            "singapore",
+            "interlagos",
+            "mexico",
+            "hungary",
+            "hungaroring",
+            "zandvoort",
+            "shanghai",
+            "miami",
+            "las vegas",
+            "montreal",
+            "barcelona",
+            "catalunya",
+            "baku",
+            "qatar",
+            "abu dhabi",
+            "yas marina",
+        ):
+            if re.search(r"\b{0}\b".format(re.escape(token)), blob, flags=re.I):
+                circuit = token.title()
+                break
     return {
+        "circuit": circuit or "Unknown",
         "session_type": session_type,
         "lap_number": lap_number,
         "involved_driver_numbers": drivers,
@@ -233,6 +275,13 @@ def _merge_live_feed(state: StewardState, normalized: Dict[str, Any]) -> Dict[st
             merged["spatial_description"] = "{0} {1}".format(timing_note, spatial).strip()
         assumptions.append("Merged live timing note into spatial description.")
 
+    # Forward vision-identified circuit into graph state for OpenF1 session resolve.
+    vision_circuit = str(merged.get("circuit") or "").strip()
+    if vision_circuit and vision_circuit.lower() not in {"unknown", "none", ""}:
+        if not (state.get("circuit") or "").strip():
+            merged["circuit_from_vision"] = vision_circuit
+            assumptions.append("Vision supplied circuit={0}.".format(vision_circuit))
+
     if assumptions:
         merged["live_feed_assumptions"] = assumptions
     return merged
@@ -242,6 +291,7 @@ def _fallback_vision(state: StewardState, reason: str) -> Dict[str, Any]:
     hint = (state.get("incident_hint") or "").strip()
     normalized = _normalize_vision(
         {
+            "circuit": state.get("circuit") or "Unknown",
             "session_type": "Unknown",
             "lap_number": None,
             "involved_driver_numbers": [],
@@ -393,7 +443,17 @@ async def default_reason_complete(state: StewardState) -> Dict[str, Any]:
     if not settings.openrouter_key:
         return _heuristic_dossier(state, "OPENROUTER_API_KEY is not configured")
     rules_text = "\n\n".join(
-        "#{0} {1}\n{2}".format(item.get("id"), item.get("title"), item.get("text"))
+        (
+            "#{0} {1}\n"
+            "source_document={2} page_number={3}\n"
+            "{4}"
+        ).format(
+            item.get("id"),
+            item.get("title") or item.get("article") or "",
+            item.get("source_document") or item.get("source") or "",
+            item.get("page_number") if item.get("page_number") is not None else 0,
+            item.get("text") or "",
+        )
         for item in (state.get("retrieved_rules") or [])
     ) or "(no rules retrieved)"
     body = {
@@ -966,6 +1026,15 @@ def build_steward_graph(
             "lap_number": normalized.get("lap_number"),
             "involved_driver_numbers": normalized.get("involved_driver_numbers") or [],
             "spatial_description": normalized.get("spatial_description") or "",
+            "circuit": (
+                normalized.get("circuit_from_vision")
+                or (
+                    normalized.get("circuit")
+                    if str(normalized.get("circuit") or "").lower() not in {"", "unknown"}
+                    else None
+                )
+                or state.get("circuit")
+            ),
             "pipeline": _mark(state, "vision", "done", (normalized.get("spatial_description") or "")[:180]),
             "assumptions": assumptions,
             "errors": list(state.get("errors") or []),
@@ -1019,6 +1088,31 @@ def build_steward_graph(
 
         degraded = bool(degraded_reason) or not any(item.get("samples") for item in series)
         summary = _summarize_telemetry(series, degraded_reason if degraded else None)
+
+        # Enrich context pack with race_control + team_radio (Phase 2 OpenF1 tools).
+        race_control_rows: List[Dict[str, Any]] = []
+        team_radio_rows: List[Dict[str, Any]] = []
+        if session_key is not None:
+            try:
+                from app.tools.openf1 import get_race_control, get_team_radio, summarize_race_control, summarize_team_radio
+
+                race_control_rows = await get_race_control(
+                    int(session_key),
+                    state.get("lap_number"),
+                    openf1=_client(),
+                )
+                for driver_number in drivers[:4]:
+                    team_radio_rows.extend(
+                        await get_team_radio(int(session_key), int(driver_number), openf1=_client())
+                    )
+                summary = "{0} {1} {2}".format(
+                    summary,
+                    summarize_race_control(race_control_rows),
+                    summarize_team_radio(team_radio_rows),
+                ).strip()
+            except Exception as exc:
+                assumptions.append("OpenF1 race_control/team_radio enrich failed: {0}".format(str(exc)[:160]))
+
         return {
             "session_key_resolved": session_key,
             "telemetry_series": series,

@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     pinecone_cloud: str = "aws"
     pinecone_region: str = "us-east-1"
     embedding_model: str = "openai/text-embedding-3-small"
+    embedding_dimensions: int = 512
     fia_pdfs_dir: str = "app/data/pdfs"
 
     @property

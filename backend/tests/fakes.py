@@ -94,8 +94,36 @@ class FakeOpenF1Client:
                 "session_key": 101,
                 "date": "2024-03-02T15:10:00+00:00",
                 "category": "Flag",
+                "flag": "YELLOW",
                 "message": "YELLOW IN ZONE 2",
-            }
+                "lap_number": 1,
+                "driver_number": 44,
+            },
+            {
+                "meeting_key": 1,
+                "session_key": 101,
+                "date": "2024-03-02T15:12:00+00:00",
+                "category": "Other",
+                "message": "CAR 44 UNDER INVESTIGATION — CAUSING A COLLISION",
+                "lap_number": 1,
+                "driver_number": 44,
+            },
+        ]
+        self.team_radio = [
+            {
+                "meeting_key": 1,
+                "session_key": 101,
+                "date": "2024-03-02T15:11:00+00:00",
+                "driver_number": 63,
+                "recording_url": "https://example.com/radio/63.mp3",
+            },
+            {
+                "meeting_key": 1,
+                "session_key": 101,
+                "date": "2024-03-02T15:11:30+00:00",
+                "driver_number": 44,
+                "recording_url": "https://example.com/radio/44.mp3",
+            },
         ]
         self.laps = [
             {
@@ -268,6 +296,10 @@ class FakeOpenF1Client:
     async def get_location(self, **params: Any) -> List[Dict[str, Any]]:
         self._record("get_location", **params)
         return self._filter(self.locations, **params)
+
+    async def get_team_radio(self, **params: Any) -> List[Dict[str, Any]]:
+        self._record("get_team_radio", **params)
+        return self._filter(getattr(self, "team_radio", []), **params)
 
     async def aclose(self) -> None:
         return None
