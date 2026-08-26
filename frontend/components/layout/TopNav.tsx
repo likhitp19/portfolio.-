@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 
 import type { Meeting } from "@/lib/types";
@@ -64,12 +63,6 @@ export function TopNav({ year, years, meetings, meetingKey }: TopNavProps) {
               ))}
             </select>
           </label>
-          <Link
-            href="/steward"
-            className="hidden text-[10px] font-medium uppercase tracking-[0.16em] text-[#C8A24A] hover:text-foreground sm:inline"
-          >
-            Open Regulatory Desk →
-          </Link>
         </div>
       </div>
     </div>

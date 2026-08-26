@@ -1,4 +1,4 @@
-import { ChampionshipTabs } from "@/components/dashboard/ChampionshipTabs";
+import { ChampionshipTabs, type CommercialDeskTab } from "@/components/dashboard/ChampionshipTabs";
 import { Alert } from "@/components/ui/alert";
 import { F1_LIVE_LOCK } from "@/lib/api";
 import type { DashboardPayload } from "@/lib/types";
@@ -6,9 +6,11 @@ import type { DashboardPayload } from "@/lib/types";
 export function DashboardView({
   data,
   error,
+  activeTab = "manufacturer",
 }: {
   data?: DashboardPayload;
   error?: { code?: string; message: string };
+  activeTab?: CommercialDeskTab;
   showChat?: boolean;
 }) {
   if (error || !data) {
@@ -52,11 +54,11 @@ export function DashboardView({
         </p>
       </div>
       <ChampionshipTabs
-        key={`tabs-${viewKey}`}
+        key={`tabs-${viewKey}-${activeTab}`}
+        activeTab={activeTab}
         year={data.year}
         drivers={data.drivers}
         constructors={data.constructors}
-        summary={data.summary}
         driverProgression={data.progression}
         constructorProgression={data.constructor_progression}
       />

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Fraunces, Geist, JetBrains_Mono } from "next/font/google";
+import { Suspense } from "react";
 
 import { SuiteHeader } from "@/components/layout/SuiteHeader";
 
@@ -22,7 +23,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`dark ${sans.variable} ${serif.variable} ${mono.variable}`} style={{ colorScheme: "dark" }}>
       <body className="min-h-screen bg-background font-sans text-foreground antialiased">
-        <SuiteHeader />
+        <Suspense fallback={<div className="h-14 border-b border-[#2A2A2A] bg-[#0E0E0E]/95" />}>
+          <SuiteHeader />
+        </Suspense>
         {children}
       </body>
     </html>

@@ -49,9 +49,11 @@ function formatElapsed(totalSeconds: number): string {
 
 export default function StewardPage() {
   const inputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const demoStartedRef = useRef(false);
   const [file, setFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState("");
-  const [clipUrl, setClipUrl] = useState("");
+  const [previewUrl, setPreviewUrl] = useState(DEMO_CLIP);
+  const [clipUrl, setClipUrl] = useState(DEMO_CLIP);
   const [year, setYear] = useState("2024");
   const [circuit, setCircuit] = useState("Spa");
   const [hint, setHint] = useState(DEMO_HINT);
@@ -60,6 +62,7 @@ export default function StewardPage() {
   const [active, setActive] = useState<StewardPipelineStage[]>([]);
   const [result, setResult] = useState<StewardAnalyzeResponse | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [showUpload, setShowUpload] = useState(false);
   const [reasoningElapsed, setReasoningElapsed] = useState(0);
   const [phraseIndex, setPhraseIndex] = useState(0);
 
@@ -74,12 +77,12 @@ export default function StewardPage() {
       setActive([]);
       setError("");
       if (previewUrl.startsWith("blob:")) URL.revokeObjectURL(previewUrl);
-      setPreviewUrl(next ? URL.createObjectURL(next) : "");
+      setPreviewUrl(next ? URL.createObjectURL(next) : DEMO_CLIP);
     },
     [previewUrl],
   );
 
-  const playerSrc = previewUrl || clipUrl;
+  const playerSrc = previewUrl || clipUrl || DEMO_CLIP;
   const dossier: ProtestDossier | null = normalizeProtestDossier(result?.protest_dossier);
 
   const reasoningActive = useMemo(() => {
@@ -108,94 +111,107 @@ export default function StewardPage() {
     };
   }, [reasoningActive]);
 
-  function markStage(stage: StewardPipelineStage) {
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    void video.play().catch(() => {
+      /* Browser may block until user gesture; muted autoplay usually succeeds. */
+    });
+  }, [playerSrc]);
+
+  const markStage = useCallback((stage: StewardPipelineStage) => {
     setActive((current) => (current.includes(stage) ? current : [...current, stage]));
-  }
+  }, []);
 
-  async function analyze(options?: {
-    file?: File | null;
-    clipUrl?: string;
-    year?: string;
-    circuit?: string;
-    hint?: string;
-  }) {
-    const nextFile = options && "file" in options ? options.file ?? null : file;
-    const nextClip = options?.clipUrl ?? clipUrl;
-    const nextYear = options?.year ?? year;
-    const nextCircuit = options?.circuit ?? circuit;
-    const nextHint = options?.hint ?? hint;
+  const analyze = useCallback(
+    async (options?: {
+      file?: File | null;
+      clipUrl?: string;
+      year?: string;
+      circuit?: string;
+      hint?: string;
+    }) => {
+      const nextFile = options && "file" in options ? options.file ?? null : file;
+      const nextClip = options?.clipUrl ?? clipUrl;
+      const nextYear = options?.year ?? year;
+      const nextCircuit = options?.circuit ?? circuit;
+      const nextHint = options?.hint ?? hint;
 
-    setBusy(true);
-    setError("");
-    setResult(null);
-    setActive([]);
-    const yearNum = Number(nextYear) || undefined;
-    const liveFeed: LiveFeedContext = {
-      session_type: "Race",
-      lap_number: 1,
-      involved_driver_numbers: [63, 44],
-      timing_note: nextHint,
-    };
-    try {
-      if (nextFile) {
-        markStage("vision");
-        const uploadPromise = analyzeStewardUpload({
-          file: nextFile,
-          year: yearNum,
-          circuit: nextCircuit || undefined,
-          incidentHint: nextHint,
-          clipUrl: nextClip || undefined,
-          liveFeed,
-          filingTeam: "Mercedes-AMG Petronas Formula One Team",
-          filingType: "protest",
-        });
-        const tick = window.setTimeout(() => markStage("telemetry"), 700);
-        const tick2 = window.setTimeout(() => markStage("rules"), 1600);
-        const payload = await uploadPromise;
-        window.clearTimeout(tick);
-        window.clearTimeout(tick2);
-        setActive((payload.pipeline || []).map((item) => item.stage));
-        markStage("reasoning");
-        setResult(payload);
-        return;
-      }
-      const payload = await analyzeStewardClipStream(
-        {
-          clip_url: nextClip || undefined,
-          year: yearNum,
-          circuit: nextCircuit || undefined,
-          incident_hint: nextHint,
-          live_feed: liveFeed,
-          filing_team: "Mercedes-AMG Petronas Formula One Team",
-          filing_type: "protest",
-        },
-        (stage) => markStage(stage.stage),
-      );
-      setActive((payload.pipeline || []).map((item) => item.stage));
-      setResult(payload);
-    } catch (caught) {
+      setBusy(true);
+      setError("");
+      setResult(null);
+      setActive([]);
+      const yearNum = Number(nextYear) || undefined;
+      const liveFeed: LiveFeedContext = {
+        session_type: "Race",
+        lap_number: 1,
+        involved_driver_numbers: [63, 44],
+        timing_note: nextHint,
+      };
       try {
-        markStage("vision");
-        const fallback = await analyzeStewardClip({
-          clip_url: nextClip || undefined,
-          year: yearNum,
-          circuit: nextCircuit || undefined,
-          incident_hint: nextHint,
-          live_feed: liveFeed,
-          filing_team: "Mercedes-AMG Petronas Formula One Team",
-          filing_type: "protest",
-        });
-        setActive((fallback.pipeline || []).map((item) => item.stage));
-        setResult(fallback);
-      } catch (second) {
-        setError(second instanceof Error ? second.message : caught instanceof Error ? caught.message : "Analyze failed");
+        if (nextFile) {
+          markStage("vision");
+          const uploadPromise = analyzeStewardUpload({
+            file: nextFile,
+            year: yearNum,
+            circuit: nextCircuit || undefined,
+            incidentHint: nextHint,
+            clipUrl: nextClip || undefined,
+            liveFeed,
+            filingTeam: "Mercedes-AMG Petronas Formula One Team",
+            filingType: "protest",
+          });
+          const tick = window.setTimeout(() => markStage("telemetry"), 700);
+          const tick2 = window.setTimeout(() => markStage("rules"), 1600);
+          const payload = await uploadPromise;
+          window.clearTimeout(tick);
+          window.clearTimeout(tick2);
+          setActive((payload.pipeline || []).map((item) => item.stage));
+          markStage("reasoning");
+          setResult(payload);
+          return;
+        }
+        const payload = await analyzeStewardClipStream(
+          {
+            clip_url: nextClip || undefined,
+            year: yearNum,
+            circuit: nextCircuit || undefined,
+            incident_hint: nextHint,
+            live_feed: liveFeed,
+            filing_team: "Mercedes-AMG Petronas Formula One Team",
+            filing_type: "protest",
+          },
+          (stage) => markStage(stage.stage),
+        );
+        setActive((payload.pipeline || []).map((item) => item.stage));
+        setResult(payload);
+      } catch (caught) {
+        try {
+          markStage("vision");
+          const fallback = await analyzeStewardClip({
+            clip_url: nextClip || undefined,
+            year: yearNum,
+            circuit: nextCircuit || undefined,
+            incident_hint: nextHint,
+            live_feed: liveFeed,
+            filing_team: "Mercedes-AMG Petronas Formula One Team",
+            filing_type: "protest",
+          });
+          setActive((fallback.pipeline || []).map((item) => item.stage));
+          setResult(fallback);
+        } catch (second) {
+          setError(
+            second instanceof Error ? second.message : caught instanceof Error ? caught.message : "Analyze failed",
+          );
+        }
+      } finally {
+        setBusy(false);
       }
-    } finally {
-      setBusy(false);
-    }
-  }
+    },
+    [circuit, clipUrl, file, hint, markStage, year],
+  );
 
-  async function runSpaDemo() {
+  const runSpaDemo = useCallback(async () => {
     setError("");
     try {
       const response = await fetch(DEMO_CLIP);
@@ -220,7 +236,13 @@ export default function StewardPage() {
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Failed to start Spa demo");
     }
-  }
+  }, [analyze, previewUrl]);
+
+  useEffect(() => {
+    if (demoStartedRef.current) return;
+    demoStartedRef.current = true;
+    void runSpaDemo();
+  }, [runSpaDemo]);
 
   const chartData = useMemo(() => {
     const series = result?.telemetry_series || [];
@@ -245,96 +267,106 @@ export default function StewardPage() {
         <section className="grid gap-4">
           <Card className="border-[#2A2A2A] bg-[#111111]">
             <CardHeader className="flex flex-row items-center justify-between gap-3">
-              <CardTitle className="text-base">Incident intake</CardTitle>
+              <CardTitle className="text-base">Spa Turn 5 — live demo</CardTitle>
               <Badge className="rounded-sm border-[#C8A24A]/40 bg-transparent text-[10px] uppercase tracking-[0.14em] text-[#C8A24A]">
                 Regulatory Desk
               </Badge>
             </CardHeader>
             <CardContent className="grid gap-3">
               <div
-                role="button"
-                tabIndex={0}
-                aria-label="Video dropzone"
-                className={`flex min-h-52 cursor-pointer flex-col items-center justify-center rounded-sm border border-dashed px-4 text-center transition-colors ${
-                  dragOver ? "border-[#E10600] bg-[#E10600]/10" : "border-[#2A2A2A] bg-[#0A0A0A]"
+                className={`overflow-hidden rounded-sm border bg-black ${
+                  showUpload ? "border-dashed border-[#2A2A2A]" : "border-[#2A2A2A]"
                 }`}
-                onClick={() => inputRef.current?.click()}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") inputRef.current?.click();
-                }}
-                onDragOver={(event) => {
-                  event.preventDefault();
-                  setDragOver(true);
-                }}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={(event) => {
-                  event.preventDefault();
-                  setDragOver(false);
-                  const next = event.dataTransfer.files?.[0];
-                  if (next) onFile(next);
-                }}
               >
-                {playerSrc ? (
-                  <video className="max-h-72 w-full rounded-sm bg-black" src={playerSrc} controls />
-                ) : (
-                  <div className="grid gap-2">
-                    <p className="text-sm font-medium text-[#F5F5F5]">Drop MP4 broadcast / onboard clip</p>
-                    <p className="text-xs text-muted-foreground">
-                      Drag &amp; drop, or click to browse. Qwen-VL reads TV graphics and overlays.
-                    </p>
-                  </div>
-                )}
+                <video
+                  ref={videoRef}
+                  key={playerSrc}
+                  className="max-h-80 w-full bg-black"
+                  src={playerSrc}
+                  autoPlay
+                  muted
+                  playsInline
+                  controls
+                  loop
+                />
               </div>
-              <input
-                ref={inputRef}
-                type="file"
-                accept="video/mp4,video/*,image/*"
-                className="hidden"
-                onChange={(event) => onFile(event.target.files?.[0] ?? null)}
-              />
+
+              <p className="text-[11px] text-muted-foreground">
+                Auto-running{" "}
+                <span className="font-mono text-[#C8A24A]">testf1incident1.mp4</span> — Spa / Lap 1 / cars 44 &amp; 63.
+                {busy ? " Pipeline in progress…" : result ? " Dossier ready." : null}
+              </p>
 
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
+                size="sm"
                 disabled={busy}
-                className="w-full border-[#C8A24A]/50 bg-[#C8A24A]/5 text-[#F5F5F5] hover:bg-[#C8A24A]/15 hover:text-white"
-                onClick={() => void runSpaDemo()}
+                className="h-8 w-fit px-2 text-[11px] text-muted-foreground hover:text-[#F5F5F5]"
+                onClick={() => setShowUpload((value) => !value)}
               >
-                🏎️ Run Spa Incident Demo
+                {showUpload ? "Hide custom upload" : "Upload Custom Incident (.mp4)"}
               </Button>
-              <p className="text-[11px] text-muted-foreground">
-                Loads <span className="font-mono text-[#C8A24A]">testf1incident1.mp4</span> with Spa / Lap 1 / cars 44 &amp; 63 and starts the pipeline.
-              </p>
 
-              {file ? (
-                <p className="truncate text-xs text-muted-foreground">
-                  Selected: <span className="text-[#C8A24A]">{file.name}</span>
-                </p>
+              {showUpload ? (
+                <div className="grid gap-3 rounded-sm border border-[#2A2A2A] bg-[#0A0A0A] p-3">
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Video dropzone"
+                    className={`flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-sm border border-dashed px-4 text-center transition-colors ${
+                      dragOver ? "border-[#E10600] bg-[#E10600]/10" : "border-[#2A2A2A]"
+                    }`}
+                    onClick={() => inputRef.current?.click()}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") inputRef.current?.click();
+                    }}
+                    onDragOver={(event) => {
+                      event.preventDefault();
+                      setDragOver(true);
+                    }}
+                    onDragLeave={() => setDragOver(false)}
+                    onDrop={(event) => {
+                      event.preventDefault();
+                      setDragOver(false);
+                      const next = event.dataTransfer.files?.[0];
+                      if (next) onFile(next);
+                    }}
+                  >
+                    <p className="text-xs text-muted-foreground">Drop a custom MP4 or click to browse</p>
+                  </div>
+                  <input
+                    ref={inputRef}
+                    type="file"
+                    accept="video/mp4,video/*,image/*"
+                    className="hidden"
+                    onChange={(event) => onFile(event.target.files?.[0] ?? null)}
+                  />
+                  {file ? (
+                    <p className="truncate text-xs text-muted-foreground">
+                      Selected: <span className="text-[#C8A24A]">{file.name}</span>
+                    </p>
+                  ) : null}
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className="grid gap-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                      Year
+                      <Input value={year} onChange={(event) => setYear(event.target.value)} />
+                    </label>
+                    <label className="grid gap-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                      Circuit
+                      <Input value={circuit} onChange={(event) => setCircuit(event.target.value)} />
+                    </label>
+                  </div>
+                  <label className="grid gap-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                    Incident / timing note
+                    <Input value={hint} onChange={(event) => setHint(event.target.value)} />
+                  </label>
+                  <Button disabled={busy || (!file && !clipUrl && !hint)} onClick={() => void analyze()}>
+                    {busy ? "Building protest dossier…" : "Analyze custom clip"}
+                  </Button>
+                </div>
               ) : null}
-              <label className="grid gap-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-                Clip URL
-                <Input value={clipUrl} onChange={(event) => setClipUrl(event.target.value)} placeholder="https://... or /demo.mp4" />
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <label className="grid gap-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-                  Year
-                  <Input value={year} onChange={(event) => setYear(event.target.value)} />
-                </label>
-                <label className="grid gap-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-                  Circuit
-                  <Input value={circuit} onChange={(event) => setCircuit(event.target.value)} />
-                </label>
-              </div>
-              <label className="grid gap-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-                Incident / timing note
-                <Input value={hint} onChange={(event) => setHint(event.target.value)} />
-              </label>
-              <Button
-                disabled={busy || (!file && !clipUrl && !hint)}
-                onClick={() => void analyze()}
-              >
-                {busy ? "Building protest dossier…" : "File Phase 1 assessment"}
-              </Button>
+
               {error ? <p className="text-sm text-[#E10600]">{error}</p> : null}
             </CardContent>
           </Card>
@@ -350,7 +382,9 @@ export default function StewardPage() {
                 const current =
                   busy &&
                   !done &&
-                  (index === 0 || active.includes(STAGES[index - 1].id) || (result?.pipeline || []).some((item) => item.stage === STAGES[index - 1].id));
+                  (index === 0 ||
+                    active.includes(STAGES[index - 1].id) ||
+                    (result?.pipeline || []).some((item) => item.stage === STAGES[index - 1].id));
                 const isReasoningWait = stage.id === "reasoning" && (current || reasoningActive);
                 return (
                   <div

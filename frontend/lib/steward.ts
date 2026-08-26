@@ -111,11 +111,14 @@ export type StewardAnalyzeResponse = {
   disclaimer: string;
 };
 
+const DEFAULT_API_BASE = "http://127.0.0.1:8000";
+
 function apiBase(): string {
-  if (typeof window === "undefined") {
-    return (process.env.API_INTERNAL_URL ?? "http://127.0.0.1:8000").replace(/\/$/, "");
-  }
-  return (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
+  const base =
+    typeof window === "undefined"
+      ? process.env.API_INTERNAL_URL ?? process.env.NEXT_PUBLIC_API_URL ?? DEFAULT_API_BASE
+      : process.env.NEXT_PUBLIC_API_URL ?? DEFAULT_API_BASE;
+  return base.replace(/\/$/, "");
 }
 
 export async function analyzeStewardClip(body: StewardAnalyzeRequest): Promise<StewardAnalyzeResponse> {

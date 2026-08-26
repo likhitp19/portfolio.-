@@ -34,11 +34,14 @@ export function formatApiError(error: unknown): { code?: string; message: string
   return { message: "Dashboard data is unavailable." };
 }
 
+const DEFAULT_API_BASE = "http://127.0.0.1:8000";
+
 function apiBase(): string {
-  if (typeof window === "undefined") {
-    return (process.env.API_INTERNAL_URL ?? "http://127.0.0.1:8000").replace(/\/$/, "");
-  }
-  return (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
+  const base =
+    typeof window === "undefined"
+      ? process.env.API_INTERNAL_URL ?? process.env.NEXT_PUBLIC_API_URL ?? DEFAULT_API_BASE
+      : process.env.NEXT_PUBLIC_API_URL ?? DEFAULT_API_BASE;
+  return base.replace(/\/$/, "");
 }
 
 function parseApiError(status: number, raw: string): ApiError {
