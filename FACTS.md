@@ -2,7 +2,9 @@
 
 OpenF1/Jolpica have **points, results, and sessions**. They do **not** have team valuations, driver retainers, or the FIA cost cap. Those live in a **cited fact store**. Dashboard GET and chat `get_finance_estimates` **only read the store**. They never search the web on page load.
 
-Full schema and accuracy rules: [ARCHITECTURE.md](./ARCHITECTURE.md) §2.2.
+Product context: [FEATURES.md](./FEATURES.md). Protest Engine does **not** write commercial USD.
+
+Full schema and accuracy rules: [ARCHITECTURE.md](./ARCHITECTURE.md) §8.
 
 ---
 
@@ -57,7 +59,7 @@ A cold full-season dashboard used to hammer OpenF1 for constructor charts and so
 | --- | --- |
 | Constructor progression | Long seasons use **Jolpica season results** (one call), not per-race OpenF1 team snapshots |
 | API memory cache | `/api/dashboard` cached ~15 minutes per `(year, meeting_key)` |
-| Preload | `DASHBOARD_PRELOAD=true` warms 2024 and 2025 after boot |
+| Preload | `DASHBOARD_PRELOAD=true` warms 2024, 2025, and 2026 after boot |
 | Browser | `AbortSignal` **90s** so a cold Railway start can finish |
 
 Constructor **race wins** on the Manufacturer tab are season totals from Jolpica constructor standings (`wins`) and paginated race results. A single `/results.json` page is only ~30 classification rows (about one GP); we page until `total`. Sprint sessions are not counted. **Wins / GP** uses completed grands prix, not every OpenF1 session labeled Race.

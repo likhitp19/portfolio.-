@@ -1,6 +1,24 @@
-import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 
-/** Always send `/` to the default season. Edge/host 404s happen if this route is missing. */
+import { HomeEducation } from "@/components/portfolio/HomeEducation";
+import { HomeExperience } from "@/components/portfolio/HomeExperience";
+import { HomeIntro } from "@/components/portfolio/HomeIntro";
+import { HomeProjects } from "@/components/portfolio/HomeProjects";
+import { PortfolioShell } from "@/components/portfolio/layout/PortfolioShell";
+import { PROFILE } from "@/lib/portfolio/profile";
+
+export const metadata: Metadata = {
+  title: `${PROFILE.name} — ${PROFILE.title}`,
+  description: PROFILE.tagline,
+};
+
 export default function HomePage() {
-  redirect("/season/2026");
+  return (
+    <PortfolioShell>
+      <HomeIntro />
+      <HomeEducation />
+      <HomeExperience />
+      <HomeProjects />
+    </PortfolioShell>
+  );
 }

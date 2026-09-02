@@ -1,26 +1,24 @@
-# Architecture — Team Principal Protest & Review Engine
+# Architecture — Apex F1 Suite
 
-Contract aligned with [README.md](./README.md) and [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md).
+Contract aligned with [README.md](./README.md), [FEATURES.md](./FEATURES.md), and [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md).
 
-**Product north star:** a **Team Principal Protest & Review Engine**. The operator acts as counsel for a constructor (e.g. Mercedes-AMG Petronas), ingests an on-track incident, gathers OpenF1 session context, retrieves **verbatim FIA Sporting Regulations** from a legal RAG index, and receives a structured **Protest Dossier** — not a fake Steward Decision.
+**Product north star (Regulatory Desk):** a **Team Principal Protest & Review Engine**. The operator acts as counsel for a constructor (e.g. Mercedes-AMG Petronas), ingests an on-track incident, gathers OpenF1 session context, retrieves **verbatim FIA Sporting Regulations** from a legal RAG index, and receives a structured **Protest Dossier** — not a fake Steward Decision.
 
 **Disclaimer:** dossier output is a **portfolio simulation**. Citations must quote the indexed regulation text and page metadata; they are not an official FIA filing.
 
-**Secondary surface (shipped):** Apex Analytics commercial desk — separate compiled LangGraph from the Protest Engine.
+**Commercial desk (shipped):** Apex Analytics — Manufacturer ROI, Driver Assets, Executive Co-Pilot. Separate compiled LangGraph from the Protest Engine. Feature inventory: [FEATURES.md](./FEATURES.md).
 
 ---
 
-## Active product focus — Phase 1 vs Phase 2 vs Phase 3
+## Shipped protest phases (1–3)
 
-| Phase | Name | Delivers |
-| --- | --- | --- |
-| **Phase 1** | **Pinecone RAG Setup & PDF Ingestion** | `backend/scripts/ingest_pdfs.py` (PyMuPDF) → `MarkdownHeaderTextSplitter` → Pinecone upsert with `page_number` + `source_document` metadata |
-| **Phase 2** | **LangGraph Updates (OpenF1 & Reasoning)** | OpenF1 `/v1/race_control` + `/v1/team_radio` tools; `verdict_reasoning_node` must emit **exact verbatim** quotes + page/source; `ProtestDossier` with `required_telemetry_evidence` when OpenF1 is coarse |
-| **Phase 3** | **Next.js Protest Dossier UI** | `/steward` Mercedes-AMG Petronas FIA Protest Dossier — RegulatoryCitation cards + evidence checklist badges |
+| Phase | Name | Status | Delivers |
+| --- | --- | --- | --- |
+| **Phase 1** | **Pinecone RAG Setup & PDF Ingestion** | **Done** | `backend/scripts/ingest_pdfs.py` (PyMuPDF) → `MarkdownHeaderTextSplitter` → Pinecone upsert with `page_number` + `source_document` metadata |
+| **Phase 2** | **LangGraph Updates (OpenF1 & Reasoning)** | **Done** | OpenF1 `/v1/race_control` + `/v1/team_radio` tools; `verdict_reasoning_node` emits **exact verbatim** quotes + page/source; `ProtestDossier` with `required_telemetry_evidence` when OpenF1 is coarse |
+| **Phase 3** | **Next.js Protest Dossier UI** | **Done** | `/steward` Mercedes-AMG Petronas FIA Protest Dossier — RegulatoryCitation cards + evidence checklist badges |
 
 **Naming note:** Evidence status `pending_phase2` on a dossier item means *future high-frequency telemetry ingest*, **not** Implementation Phase 2 (LangGraph). See [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md).
-
-Do not start Phase *N*+1 code until Phase *N* docs and exit criteria are approved.
 
 ---
 
@@ -180,11 +178,15 @@ type ProtestDossier = {
 
 ---
 
-## 5. Frontend (Phase 3)
+## 5. Frontend (Phase 3 — shipped)
 
 | Route | Role |
 | --- | --- |
-| `/steward` | Mercedes-AMG Petronas FIA Protest Dossier — citation cards (quote + source + page badge), evidence checklist (Present / Pending Phase 2 / Insufficient), success probability |
+| `/steward` | Mercedes-AMG Petronas FIA Protest Dossier — citation cards (quote + source + page badge), evidence checklist (Present / Pending Phase 2 / Insufficient), success probability, Spa auto-demo + custom upload |
+| `/season/[year]` | Apex Analytics — Manufacturer ROI / Driver Assets + Co-Pilot |
+| `/about` | Profile |
+
+Full UI inventory: [FEATURES.md](./FEATURES.md).
 
 ---
 
@@ -214,6 +216,17 @@ type ProtestDossier = {
 
 ---
 
-## 8. Commercial desk (unchanged)
+## 8. Commercial desk (Apex Analytics)
 
-Dashboard + chat Co-Pilot remain separate. `F1_LIVE_LOCK` applies to live OpenF1 401 on dashboard routes. Protest Engine must not invent commercial USD.
+Dashboard + chat Co-Pilot remain a **separate** compiled graph (`backend/app/agents/graph.py`) from `steward_graph`.
+
+| Surface | Contract |
+| --- | --- |
+| Manufacturer ROI | Constructor championship points + cited fact-store USD (valuation, cap, CPP, wins) |
+| Driver Assets | Top-5 FER cards, teammate delta, points progression |
+| Executive Co-Pilot | `POST /api/chat` / `/api/chat/stream` — server-owned `trace` |
+| Analytics extras | `/api/analytics/constructor-timeline`, `/api/analytics/teammate-delta` |
+
+`F1_LIVE_LOCK` applies to live OpenF1 401 on dashboard routes. Protest Engine must not invent commercial USD. Dashboard GET never calls Tavily.
+
+Commercial agent evaluation: [EVALUATION.md](./EVALUATION.md). Shipped vs gap intents: [FEATURES.md](./FEATURES.md) §4.

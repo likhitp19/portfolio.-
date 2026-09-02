@@ -1,10 +1,10 @@
-# Implementation plan — Team Principal Protest & Review Engine
+# Implementation plan — Apex F1 Suite
 
-Aligned with [README.md](./README.md) and [ARCHITECTURE.md](./ARCHITECTURE.md).
+Aligned with [README.md](./README.md), [FEATURES.md](./FEATURES.md), and [ARCHITECTURE.md](./ARCHITECTURE.md).
 
-**Do not start a phase until the previous phase’s exit criteria are met and the phase commit is approved.**
+Shipped feature inventory (what exists today): [FEATURES.md](./FEATURES.md).
 
-**Do not write Python or TypeScript for a phase until that phase’s documentation is approved.**
+Protest Phases 1–3 and commercial A1–A6 are complete. Remaining work is **additive** (e.g. high-frequency telemetry) and must not reopen shipped graphs unless fixing regressions.
 
 ---
 
@@ -117,14 +117,14 @@ Phase 1: FIA PDFs → PyMuPDF → MarkdownHeaderTextSplitter → Pinecone
 
 ### Scope
 
-- [ ] Build the **“Mercedes-AMG Petronas FIA Protest Dossier”** UI at `/steward`.
-- [ ] Render **RegulatoryCitation** cards: `article_name`, blockquote **`exact_quote`**, badge with **`source_document`** + **`page_number`**.
-- [ ] Render **`required_telemetry_evidence`** checklist with status badges:
+- [x] Build the **“Mercedes-AMG Petronas FIA Protest Dossier”** UI at `/steward`.
+- [x] Render **RegulatoryCitation** cards: `article_name`, blockquote **`exact_quote`**, badge with **`source_document`** + **`page_number`**.
+- [x] Render **`required_telemetry_evidence`** checklist with status badges:
   - **Present** (green)
   - **Pending Phase 2** (gold / yellow) — means *future HF telemetry ingest*, not Implementation Phase 2
   - **Insufficient** (red)
-- [ ] Display `success_probability` (Low / Medium / High) via progress bar or colored indicator.
-- [ ] Keep `frontend/lib/steward.ts` types aligned with backend `ProtestDossier` / `RegulatoryCitation`.
+- [x] Display `success_probability` (Low / Medium / High) via progress bar or colored indicator.
+- [x] Keep `frontend/lib/steward.ts` types aligned with backend `ProtestDossier` / `RegulatoryCitation`.
 
 ### Exit criteria
 
@@ -150,6 +150,12 @@ Commercial dollars remain **search → store → UI**. Dashboard GET never calls
 
 ---
 
+## Feature inventory vs this plan
+
+[FEATURES.md](./FEATURES.md) is the live map of desks, APIs, and agent intents. This file is the **phase history**. Do not treat unchecked historical commercial work as unfinished — A1–A6 and Protest 1–3 are complete.
+
+---
+
 ## Out of scope (all current work)
 
 - Issuing a real FIA Protest or Steward Decision.
@@ -157,4 +163,4 @@ Commercial dollars remain **search → store → UI**. Dashboard GET never calls
 - Live betting / brokerage execution.
 - Reintroducing a chronological event timeline on the commercial desk.
 - Treating whole-lap OpenF1 samples as apex-window proof of understeer/contact.
-- Implementing high-frequency telemetry ingest before Phases 1–3 are approved and shipped.
+- Implementing high-frequency telemetry ingest (10–100 Hz) until it is scheduled as its own phase. `POST /api/steward/phase2/telemetry` remains a schema stub.

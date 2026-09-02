@@ -1,8 +1,10 @@
-# Agent evaluation — Paddock Ledger
+# Agent evaluation — Apex F1 Suite (commercial Co-Pilot)
 
 This document is the evaluation contract for `POST /api/chat`. It is **not** a live-timing scorecard. The question is whether a Technical Manager can audit **routing, orchestration, transformation, and answer quality** from the server trace alone.
 
-Related: [ARCHITECTURE.md](./ARCHITECTURE.md) §5, [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) Phase 6, machine catalog [`eval/catalog.json`](./eval/catalog.json).
+Related: [FEATURES.md](./FEATURES.md) §4 (intents and shipped vs gap), [ARCHITECTURE.md](./ARCHITECTURE.md) §8, [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) commercial phases A4–A6, machine catalog [`eval/catalog.json`](./eval/catalog.json).
+
+The Regulatory Desk (`/steward`) is a **separate** graph and is not scored by this eight-test catalog.
 
 ---
 
@@ -260,6 +262,8 @@ Feedback to give when the tape is still API-shaped:
 
 ## 8. Current vs target (honest)
 
+Capability matrix is also in [FEATURES.md](./FEATURES.md) §4. Do not score the steward graph with this catalog.
+
 | Test | Routing | Transformation in product | Notes |
 | --- | --- | --- | --- |
 | 1 Driver FER | yes | yes | Seed finance is 2024-heavy; 2023 uses nearest year + assumption |
@@ -275,6 +279,8 @@ Feedback to give when the tape is still API-shaped:
 
 ## 9. Formulae (must match dashboard)
 
+Must match [FEATURES.md](./FEATURES.md) §12.
+
 | Metric | Formula | Source split |
 | --- | --- | --- |
 | Cost-per-point | `budget_cap_usd / constructor_points` | Cap = store; points = OpenF1/Jolpica |
@@ -289,4 +295,5 @@ Division by zero → do not rank; say points were 0.
 
 | Date | Change |
 | --- | --- |
+| 2026-08-31 | Align with FEATURES.md: product name Apex F1 Suite; steward graph out of this rubric |
 | 2026-08-23 | First eval contract: eight tests, four dimensions, cleanliness rubric, execution_trace, capability matrix |

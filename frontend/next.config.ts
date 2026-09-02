@@ -6,11 +6,6 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
-        source: "/",
-        destination: "/season/2026",
-        permanent: false,
-      },
-      {
         source: "/season/2025",
         destination: "/season/2026",
         permanent: false,

@@ -1,6 +1,6 @@
 # Stitch MCP (Google)
 
-Paddock Ledger can use [Google Stitch](https://stitch.withgoogle.com/) so an agent can pull design screens into this repo. Official setup: [Stitch MCP setup](https://stitch.withgoogle.com/docs/mcp/setup).
+Apex F1 Suite can use [Google Stitch](https://stitch.withgoogle.com/) so an agent can pull design screens into this repo. Official setup: [Stitch MCP setup](https://stitch.withgoogle.com/docs/mcp/setup).
 
 This workspace already lists a **Stitch** MCP server in [`.mcp.json`](./.mcp.json) and [`.cursor/mcp.json`](./.cursor/mcp.json) as:
 
@@ -35,4 +35,4 @@ Reload Cursor MCP after auth. Ask the agent to list Stitch projects or fetch a s
 
 ## What this app does not do
 
-Stitch does **not** run in production (Vercel/Railway). It is an **editor** design source. The shipped UI is Next.js + Tailwind + shadcn.
+Stitch does **not** run in production (Vercel/Railway). It is an **editor** design source. The shipped UI is Next.js + Tailwind + shadcn. Screen inventory: [FEATURES.md](./FEATURES.md).

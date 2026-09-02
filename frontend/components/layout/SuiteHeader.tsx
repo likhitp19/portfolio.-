@@ -29,13 +29,13 @@ const DESKS = [
   {
     href: "/about",
     match: "/about",
-    label: "About Me / Profile",
-    shortLabel: "About",
+    label: "Portfolio",
+    shortLabel: "Portfolio",
   },
 ] as const;
 
 function deskContextLabel(pathname: string, tab: string): string {
-  if (pathname.startsWith("/about")) return "Profile";
+  if (pathname.startsWith("/about") || pathname.startsWith("/projects")) return "Portfolio";
   if (pathname.startsWith("/steward")) return "Regulatory";
   if (tab === "driver") return "Driver Assets";
   return "Manufacturer ROI";
@@ -46,6 +46,9 @@ function isDeskActive(pathname: string, tab: string, desk: (typeof DESKS)[number
     if (!pathname.startsWith("/season")) return false;
     const activeTab = tab === "driver" ? "driver" : "manufacturer";
     return activeTab === desk.tab;
+  }
+  if (desk.match === "/about") {
+    return pathname === "/about" || pathname.startsWith("/projects");
   }
   return pathname === desk.match || pathname.startsWith(`${desk.match}/`);
 }
